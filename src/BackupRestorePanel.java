@@ -1,0 +1,42 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+
+public final class BackupRestorePanel extends JPanel {
+    private final JTextField folder = new JTextField(38);
+    private final JComboBox<String> interval = new JComboBox<>(new String[]{"Every 7 Days", "Every 15 Days", "Every 30 Days"});
+    private final DefaultTableModel history = new DefaultTableModel(new Object[0][], new String[]{"Backup Date & Time", "File Size", "Status"}) { public boolean isCellEditable(int row, int column) { return false; } };
+
+    public BackupRestorePanel() {
+        setLayout(new BorderLayout(16, 16)); setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
+        folder.setText(BackupConfig.folder() == null ? "" : BackupConfig.folder().toString()); interval.setSelectedItem("Every " + BackupConfig.intervalDays() + " Days");
+        JPanel body = new JPanel(); body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS)); body.add(settingsCard()); body.add(Box.createVerticalStrut(18)); body.add(historyCard()); add(body, BorderLayout.CENTER); add(actions(), BorderLayout.SOUTH); refreshHistory();
+    }
+
+    private JComponent settingsCard() {
+        JPanel card = card("Automatic Backup Settings"), form = new JPanel(new GridBagLayout()); GridBagConstraints c = constraints();
+        c.gridx = 0; c.gridy = 0; form.add(new JLabel("Backup Folder Path"), c); c.gridx = 1; c.weightx = 1; form.add(folder, c);
+        JButton browse = new JButton("Browse..."); browse.addActionListener(e -> browseFolder()); c.gridx = 2; c.weightx = 0; form.add(browse, c);
+        c.gridx = 0; c.gridy = 1; form.add(new JLabel("Automatic Backup Interval"), c); c.gridx = 1; c.gridwidth = 2; form.add(interval, c);
+        JButton save = new JButton("Save Configuration"); save.addActionListener(e -> saveConfiguration()); c.gridx = 1; c.gridy = 2; c.gridwidth = 1; form.add(save, c); card.add(form, BorderLayout.CENTER); return card;
+    }
+
+    private JComponent historyCard() { JPanel card = card("Backup History & Manual Operations"); JTable table = new JTable(history); UIStyleUtility.applyProfessionalTableStyle(table); card.add(new JScrollPane(table), BorderLayout.CENTER); card.setPreferredSize(new Dimension(0, 390)); return card; }
+    private JPanel card(String title) { JPanel card = new JPanel(new BorderLayout(10, 10)); card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)), BorderFactory.createEmptyBorder(16, 18, 18, 18))); JLabel heading = new JLabel(title); heading.setFont(new Font("SansSerif", Font.BOLD, 20)); heading.setForeground(new Color(30, 40, 60)); card.add(heading, BorderLayout.NORTH); return card; }
+    private GridBagConstraints constraints() { GridBagConstraints c = new GridBagConstraints(); c.insets = new Insets(8, 8, 8, 8); c.fill = GridBagConstraints.HORIZONTAL; c.anchor = GridBagConstraints.WEST; return c; }
+    private JComponent actions() { JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0)); JButton backup = new JButton("Backup Now"), restore = new JButton("Import & Restore Backup"); backup.setFont(new Font("SansSerif", Font.BOLD, 16)); restore.setFont(new Font("SansSerif", Font.BOLD, 16)); backup.addActionListener(e -> backupNow()); restore.addActionListener(e -> restore()); panel.add(backup); panel.add(restore); return panel; }
+    private void browseFolder() { JFileChooser chooser = new JFileChooser(); chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) folder.setText(chooser.getSelectedFile().getAbsolutePath()); }
+    private boolean saveConfiguration() { try { Path path = Path.of(folder.getText().trim()); BackupConfig.folder(path); BackupConfig.intervalDays(Integer.parseInt(((String) interval.getSelectedItem()).replaceAll("\\D+", ""))); return true; } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Choose a valid backup folder."); return false; } }
+    private void backupNow() { if (!saveConfiguration()) return; try { Path backup = BackupService.backup(BackupConfig.folder()); refreshHistory(); JOptionPane.showMessageDialog(this, "Backup created:\n" + backup); } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Backup failed: " + ex.getMessage()); } }
+    private void restore() { JFileChooser chooser = new JFileChooser(); chooser.setAcceptAllFileFilterUsed(false); chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Payroll Backup ZIP (*.zip)", "zip")); if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return; if (JOptionPane.showConfirmDialog(this, "Restore replaces the active database and local payroll files. Continue?", "Confirm Restore", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return; try { BackupService.restore(chooser.getSelectedFile().toPath()); JOptionPane.showMessageDialog(this, "Restore completed. Restart the application."); } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Restore failed: " + ex.getMessage()); } }
+    private void refreshHistory() { history.setRowCount(0); Path path = BackupConfig.folder(); if (path == null || !Files.isDirectory(path)) return; try { List<Path> backups = new ArrayList<>(); try (var files = Files.list(path)) { files.filter(file -> file.getFileName().toString().startsWith("Payroll_Full_Backup_") && file.getFileName().toString().endsWith(".zip")).forEach(backups::add); } backups.sort(Comparator.reverseOrder()); for (Path backup : backups) { BasicFileAttributes attributes = Files.readAttributes(backup, BasicFileAttributes.class); history.addRow(new Object[]{new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date(attributes.lastModifiedTime().toMillis())), String.format("%.2f MB", attributes.size() / 1048576.0), "Completed"}); } } catch (Exception ignored) { } }
+}
