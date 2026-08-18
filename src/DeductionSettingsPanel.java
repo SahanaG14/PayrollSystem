@@ -24,9 +24,12 @@ public class DeductionSettingsPanel extends JPanel {
   JPanel epfPt=new JPanel();epfPt.setLayout(new BoxLayout(epfPt,BoxLayout.Y_AXIS));
   epfPt.setBorder(BorderFactory.createEmptyBorder(0,0,0,12));
   epfPt.add(section("EPF & PT Configuration"));
-  addDeductionField(epfPt,"Employee Provident Fund Contribution","EPF",PayrollRulesStore.epfRate());
-  addDeductionField(epfPt,"Employer Provident Fund Contribution","Employer EPF",12.0);
-  addDeductionField(epfPt,"Professional Tax (PT)","PT",PayrollRulesStore.ptAmount());
+ addDeductionField(epfPt,"Employee Provident Fund Contribution","EPF",PayrollRulesStore.epfRate());
+ addDeductionField(epfPt,"Employer Provident Fund Contribution","Employer EPF",12.0);
+ addDeductionField(epfPt,"Professional Tax (PT)","PT",PayrollRulesStore.ptAmount());
+  addDeductionField(epfPt,"Employees’ Pension Scheme (EPS)","EPS",8.33);
+  addDerivedDifference(epfPt);
+  bindEpsDifference();
 
   JPanel statutory=new JPanel();statutory.setLayout(new BoxLayout(statutory,BoxLayout.Y_AXIS));
   statutory.setBorder(BorderFactory.createEmptyBorder(0,12,0,0));
@@ -71,11 +74,14 @@ public class DeductionSettingsPanel extends JPanel {
   JPanel row=new JPanel(new GridBagLayout());row.setAlignmentX(Component.LEFT_ALIGNMENT);row.setMaximumSize(new Dimension(Integer.MAX_VALUE,40));
   GridBagConstraints c=new GridBagConstraints();c.gridy=0;c.insets=new Insets(4,0,4,8);c.anchor=GridBagConstraints.WEST;
   c.gridx=0;JLabel l=new JLabel(label);l.setPreferredSize(new Dimension(185,26));row.add(l,c);
-  double configured=CompanyPolicyStore.deduction(name);JTextField f=new JTextField(Money.text(configured==0?fallback:configured));f.setPreferredSize(new Dimension(190,28));installUndoRedo(f);fields.put("deduction."+name,f);
+  double configured=CompanyPolicyStore.deduction(name);JTextField f=new JTextField(Money.text(CompanyPolicyStore.hasDeduction(name)?configured:fallback));f.setPreferredSize(new Dimension(190,28));installUndoRedo(f);fields.put("deduction."+name,f);
   c.gridx=1;row.add(f,c);
-  JComboBox<String> type=new JComboBox<>(new String[]{"Fixed (\u20B9)","% of Basic Pay"});type.setPreferredSize(new Dimension(145,28));type.setSelectedIndex(CompanyPolicyStore.deductionPercentage(name)?1:0);calculationTypes.put(name,type);
+  JComboBox<String> type=new JComboBox<>(new String[]{"Fixed (\u20B9)","% of Basic Pay"});type.setPreferredSize(new Dimension(145,28));type.setSelectedIndex(CompanyPolicyStore.hasDeduction(name)?(CompanyPolicyStore.deductionPercentage(name)?1:0):("EPS".equals(name)?1:0));calculationTypes.put(name,type);
   c.gridx=2;c.weightx=1;c.fill=GridBagConstraints.HORIZONTAL;c.insets=new Insets(4,0,4,0);row.add(type,c);p.add(row);
  }
+ private void addDerivedDifference(JPanel p){JPanel row=new JPanel(new GridBagLayout());row.setAlignmentX(Component.LEFT_ALIGNMENT);row.setMaximumSize(new Dimension(Integer.MAX_VALUE,40));GridBagConstraints c=new GridBagConstraints();c.gridy=0;c.insets=new Insets(4,0,4,8);c.anchor=GridBagConstraints.WEST;c.gridx=0;JLabel l=new JLabel("EPF–EPS Difference");l.setPreferredSize(new Dimension(185,26));row.add(l,c);JTextField f=new JTextField();f.setEditable(false);f.setPreferredSize(new Dimension(190,28));fields.put("derived.epfEpsDifference",f);c.gridx=1;row.add(f,c);JComboBox<String> type=new JComboBox<>(new String[]{"% of Basic Pay"});type.setEnabled(false);type.setPreferredSize(new Dimension(145,28));c.gridx=2;c.weightx=1;c.fill=GridBagConstraints.HORIZONTAL;c.insets=new Insets(4,0,4,0);row.add(type,c);p.add(row);updateEpsDifference();}
+ private void bindEpsDifference(){javax.swing.event.DocumentListener listener=new javax.swing.event.DocumentListener(){public void insertUpdate(javax.swing.event.DocumentEvent e){updateEpsDifference();}public void removeUpdate(javax.swing.event.DocumentEvent e){updateEpsDifference();}public void changedUpdate(javax.swing.event.DocumentEvent e){updateEpsDifference();}};fields.get("deduction.EPF").getDocument().addDocumentListener(listener);fields.get("deduction.EPS").getDocument().addDocumentListener(listener);calculationTypes.get("EPF").addActionListener(e->updateEpsDifference());calculationTypes.get("EPS").addActionListener(e->updateEpsDifference());}
+ private void updateEpsDifference(){try{double epf=Double.parseDouble(fields.get("deduction.EPF").getText().trim()),eps=Double.parseDouble(fields.get("deduction.EPS").getText().trim());fields.get("derived.epfEpsDifference").setText(Money.text(calculationTypes.get("EPF").getSelectedIndex()==1&&calculationTypes.get("EPS").getSelectedIndex()==1?Math.max(0,epf-eps):0));}catch(Exception ignored){fields.get("derived.epfEpsDifference").setText("0.00");}}
  private void installUndoRedo(JTextField field){UndoManager manager=new UndoManager();field.getDocument().addUndoableEditListener(e->manager.addEdit(e.getEdit()));field.getInputMap().put(KeyStroke.getKeyStroke("control Z"),"undo");field.getActionMap().put("undo",new AbstractAction(){public void actionPerformed(java.awt.event.ActionEvent e){if(manager.canUndo())manager.undo();}});field.getInputMap().put(KeyStroke.getKeyStroke("control Y"),"redo");field.getActionMap().put("redo",new AbstractAction(){public void actionPerformed(java.awt.event.ActionEvent e){if(manager.canRedo())manager.redo();}});}
  private void bindShortcuts(JTable grid){InputMap input=getInputMap(WHEN_IN_FOCUSED_WINDOW);ActionMap actions=getActionMap();input.put(KeyStroke.getKeyStroke("control S"),"saveDeductionRules");actions.put("saveDeductionRules",new AbstractAction(){public void actionPerformed(java.awt.event.ActionEvent e){saveButton.doClick();}});input.put(KeyStroke.getKeyStroke("control N"),"addTaxSlab");actions.put("addTaxSlab",new AbstractAction(){public void actionPerformed(java.awt.event.ActionEvent e){addSlabButton.doClick();}});grid.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("DELETE"),"removeTaxSlab");grid.getActionMap().put("removeTaxSlab",new AbstractAction(){public void actionPerformed(java.awt.event.ActionEvent e){if(grid.getSelectedRow()>=0)removeSlabButton.doClick();}});}
  private void save(){try{

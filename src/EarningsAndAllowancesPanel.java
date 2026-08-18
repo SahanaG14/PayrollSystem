@@ -37,9 +37,7 @@ public final class EarningsAndAllowancesPanel extends JPanel {
     private JComponent grid(YearMonth period) {
         java.util.List<Employee> list = employees.listForMonth("", period); Object[][] rows = new Object[list.size()][COLUMNS.length];
         for (int r = 0; r < list.size(); r++) {
-            Employee e = list.get(r); MonthlyEarningsStore.Value saved = MonthlyEarningsStore.get(e.getId(), period.toString()); double[] calculated = proratedValues(e, period);
-            double[] values = saved == null || zeroAllowances(saved) ? calculated : new double[]{saved.hra, calculated[1], saved.conveyance, saved.performance, saved.medical, saved.special, saved.fixed, saved.overtime, saved.reimbursements};
-            if (!e.isWagesStructure()) { values[1] = values[7] = values[8] = 0.0; }
+            Employee e = list.get(r); double[] values = displayedValues(e, period);
             rows[r] = new Object[]{e.getId(), e.getName(), values[0], values[1], values[2], values[3], values[4], values[5], values[6], Money.round(sum(values, 0, 6)), values[7], values[8], Money.round(values[7] + values[8])};
         }
         final boolean[] editing = {false}, restoring = {false}; final Object[][][] snapshot = {copyRows(rows)};
@@ -59,7 +57,10 @@ public final class EarningsAndAllowancesPanel extends JPanel {
         JPanel out = new JPanel(new BorderLayout()); out.add(controls, BorderLayout.NORTH); out.add(UIStyleUtility.frozenEmployeeColumns(table), BorderLayout.CENTER); out.add(bottom, BorderLayout.SOUTH); return out;
     }
 
-    private double[] proratedValues(Employee e, YearMonth period) {
+    public static double[] displayedValues(Employee e, YearMonth period) { MonthlyEarningsStore.Value saved = MonthlyEarningsStore.get(e.getId(), period.toString()); double[] calculated = proratedValues(e, period); double[] values = saved == null || zeroAllowances(saved) ? calculated : new double[]{saved.hra, calculated[1], saved.conveyance, saved.performance, saved.medical, saved.special, saved.fixed, saved.overtime, saved.reimbursements}; if (!e.isWagesStructure()) values[1] = values[7] = values[8] = 0.0; return values; }
+    public static double epfGrossWages(Employee e, YearMonth period) { double[] values=displayedValues(e,period); MonthlyEarningsStore.Value saved=MonthlyEarningsStore.get(e.getId(),period.toString()); double performance=saved==null?values[3]:saved.performance; return Money.round(sum(values,0,6)-performance-values[1]); }
+
+    private static double[] proratedValues(Employee e, YearMonth period) {
         AttendanceDAO attendance = new AttendanceDAO(); AttendanceRecord record = attendance.load(e.getId(), period.toString());
         double workingDays = attendance.workingDays(period.toString()), payableDays = Math.max(0, record.daysPayable);
         if (workingDays <= 0) workingDays = 1;
