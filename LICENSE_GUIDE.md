@@ -182,11 +182,26 @@ curl -s https://payroll-license-api.adityapdixit.workers.dev/health
 
 ---
 
+## 💓 Continuous Runtime Heartbeat (When the App is Left Running)
+
+### What happens if a user never closes the app or leaves their computer on?
+
+1. **Automatic Background Heartbeat**:
+   - While Payroll System is running, an internal background daemon (`License-Heartbeat`) runs every 15 minutes to re-verify the license status against Cloudflare D1.
+2. **Instant Revocation Interception**:
+   - The moment you revoke or disable a license on the server, the next background heartbeat check detects the `403` status.
+   - The desktop app immediately **closes all open application windows**, displays a warning dialog (*"License validation failed: License key is invalid or disabled"*), and locks the software by presenting the **License Activation Screen**.
+3. **Network Outage & Grace Period**:
+   - If an active user temporarily loses internet connection (e.g. Wi-Fi drops for a few minutes), they are not kicked out. However, if the server explicitly reports that the license was revoked or expired, access is revoked immediately.
+
+---
+
 ## 🔒 Security Summary
 
 1. **`ADMIN_SECRET` Protection**:
    - Stored locally only in `license-server/.env` (gitignored).
    - Never included in client builds or shared with customers.
 2. **Tamper Prevention**:
-   - Modifying local `.properties` files does not bypass licensing because the app contacts the Cloudflare D1 endpoint on every launch.
+   - Modifying local `.properties` files does not bypass licensing because the app contacts the Cloudflare D1 endpoint on launch and on background heartbeat checks.
    - Deleting or changing local state forces the application back to the activation prompt.
+

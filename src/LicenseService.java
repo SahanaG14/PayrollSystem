@@ -61,5 +61,36 @@ public final class LicenseService {
     private static String sha256(String value) { try { byte[] bytes = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)); StringBuilder out = new StringBuilder(); for (byte b : bytes) out.append(String.format("%02x", b)); return out.toString(); } catch (Exception e) { throw new IllegalStateException(e); } }
     private static String json(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
     private static String message(String response, String fallback) { int mark = response.indexOf("\"message\":\""); if (mark < 0) return fallback; int start = mark + 11, end = response.indexOf('"', start); return end > start ? response.substring(start, end) : fallback; }
+    private static final java.util.concurrent.ScheduledExecutorService HEARTBEAT = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "License-Heartbeat");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /** Starts periodic background license checks while the application remains open. */
+    public static void startHeartbeat() {
+        HEARTBEAT.scheduleAtFixedRate(() -> {
+            try {
+                Result result = validateSavedLicense();
+                if (!result.allowed()) {
+                    java.awt.EventQueue.invokeLater(() -> handleLicenseLost(result.message()));
+                }
+            } catch (Exception ignored) { }
+        }, 15, 15, java.util.concurrent.TimeUnit.MINUTES);
+    }
+
+    private static void handleLicenseLost(String reason) {
+        for (java.awt.Window window : java.awt.Window.getWindows()) {
+            if (!(window instanceof LicenseActivationFrame)) {
+                window.dispose();
+            }
+        }
+        javax.swing.JOptionPane.showMessageDialog(null,
+            "License validation failed: " + reason + "\n\nPlease activate a valid license to continue using Payroll System.",
+            "License Revoked or Inactive",
+            javax.swing.JOptionPane.ERROR_MESSAGE);
+        new LicenseActivationFrame().setVisible(true);
+    }
+
     public record Result(boolean allowed, String message) { static Result allowed(String message) { return new Result(true, message); } static Result denied(String message) { return new Result(false, message); } }
 }

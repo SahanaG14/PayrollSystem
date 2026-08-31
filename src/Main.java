@@ -19,6 +19,7 @@ public class Main {
     static void startApplication() {
         DatabaseInitializer.initialize();
         AutoSaveService.start();
+        LicenseService.startHeartbeat();
         Runtime.getRuntime().addShutdownHook(new Thread(AutoSaveService::shutdown,"Payroll-Recovery-Flush"));
         EventQueue.invokeLater(() -> {
             System.setProperty("filechooser.useShellFolder", "false");
