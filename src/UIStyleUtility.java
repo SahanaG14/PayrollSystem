@@ -4,6 +4,9 @@ import javax.swing.table.*;
 import java.awt.*;
 
 public final class UIStyleUtility {
+    /** Standard content inset for module roots: compact but still visually separated from the frame header. */
+    public static final int MODULE_TOP_GAP = 10, MODULE_SIDE_GAP = 16, MODULE_BOTTOM_GAP = 12;
+    public static Border compactModuleBorder() { return BorderFactory.createEmptyBorder(MODULE_TOP_GAP, MODULE_SIDE_GAP, MODULE_BOTTOM_GAP, MODULE_SIDE_GAP); }
     private static final Color TOTAL = new Color(220, 235, 252);
     public static final Color NAVY = new Color(26, 46, 64), ZEBRA = new Color(246, 248, 250), GRID = new Color(203, 210, 217);
     public static void installGlobalButtonDefaults() {

@@ -8,7 +8,8 @@ public final class SalaryCalculationEngine {
         double workingDays = attendance.workingDays(period.toString());
         if (workingDays <= 0) workingDays = record.workingDays;
         if (workingDays <= 0) workingDays = period.lengthOfMonth();
-        double payableDays = attendance.hasSavedAttendance(employee.getId(), period.toString()) ? Math.max(0, record.daysPayable) : workingDays;
+        AttendanceSettings leaveSettings = new AttendanceSettingsDAO().load();
+        double payableDays = attendance.hasSavedAttendance(employee.getId(), period.toString()) ? LeaveBalanceService.payableDays(employee, period, workingDays, record.absentDays, record.paidLeaveDays, record.unpaidLeaveDays, leaveSettings) : workingDays;
         double ratio = Math.min(1.0, payableDays / workingDays);
         double basic = Money.round(SalaryRevisionStore.basicFor(employee, period) * ratio);
         MonthlyEarningsStore.Value saved = MonthlyEarningsStore.get(employee.getId(), period.toString());

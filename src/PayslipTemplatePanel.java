@@ -11,7 +11,7 @@ public class PayslipTemplatePanel extends JPanel {
         for(int i=0;i<6;i++){g.gridx=i;g.gridy=0;g.weightx=1;g.fill=GridBagConstraints.BOTH;}
         AttendanceRecord attendance=new AttendanceDAO().load(employee.getId(),period.toString());
         double working=new AttendanceDAO().workingDays(period.toString()); AttendanceSettings rules=new AttendanceSettingsDAO().load();
-        double payable=Money.round(Math.max(0,working-attendance.absentDays-Math.max(0,attendance.paidLeaveDays-rules.casualLeaveLimit)-Math.max(0,attendance.unpaidLeaveDays-rules.earnedLeaveLimit)));
+        double payable=LeaveBalanceService.payableDays(employee,period,working,attendance.absentDays,attendance.paidLeaveDays,attendance.unpaidLeaveDays,rules);
         CTCStore.Value allowance=CTCStore.get(employee.getId()), other=CTCStore.getOther(employee.getId(),period.toString());double attendanceBonus=working>0&&payable==working?allowance.attendance:0,totalAllowance=allowance.allowances()-allowance.attendance+attendanceBonus;
         DeductionStore.Value deduction=DeductionStore.get(employee.getId(), period.toString());
 

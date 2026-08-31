@@ -20,7 +20,7 @@ public class PayrollPanel extends JPanel {
     private PayslipHistoryPanel history;
 
     public PayrollPanel(PayrollSystemFrame frame){
-        setLayout(new BorderLayout());setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
+        setLayout(new BorderLayout());setBorder(UIStyleUtility.compactModuleBorder());
         tabs.addTab("Generate Payslip",individual());
         tabs.addTab("Generate Bulk Payslip",bulk());
         history=new PayslipHistoryPanel();tabs.addTab("Payslip Generation History",history);
@@ -43,7 +43,7 @@ public class PayrollPanel extends JPanel {
     private JPanel loadingPanel(String text){JPanel panel=new JPanel(new GridBagLayout());panel.add(new JLabel(text));return panel;}
     private void loadIndividualMonth(){int index=individualMonths==null?-1:individualMonths.getSelectedIndex();if(index<0)return;JComponent current=(JComponent)individualMonths.getComponentAt(index);if(Boolean.TRUE.equals(current.getClientProperty("loading"))||current.getComponentCount()>1)return;current.putClientProperty("loading",Boolean.TRUE);int activeYear=individualYear;YearMonth period=FinancialYear.month(activeYear,index);ApplicationTasks.execute(()->{JComponent form=individualForm(period);SwingUtilities.invokeLater(()->{if(individualYear==activeYear&&individualMonths.getSelectedIndex()==index){TabStyle.apply(form);individualMonths.setComponentAt(index,form);}});});}
     private JComponent individualForm(YearMonth period){
-        JPanel panel=new JPanel(new GridLayout(1,2,36,0));panel.setBorder(BorderFactory.createEmptyBorder(48,120,24,120));
+        JPanel panel=new JPanel(new GridLayout(1,2,36,0));panel.setBorder(BorderFactory.createEmptyBorder(UIStyleUtility.MODULE_TOP_GAP,120,12,120));
         JComboBox<Object> selectedEmployee=new JComboBox<>();selectedEmployee.addItem("-- Select Employee --");for(Employee person:employees.listForMonth("",period))selectedEmployee.addItem(person);selectedEmployee.setSelectedIndex(0);
         JTextField basic=out(),monthly=out(),allowance=out(),otPay=out(),totalGross=out(),totalDeductions=out(),totalNet=out(),performance=out(),other=out();
         JPanel left=column(),right=column();addRow(left,"Employee ID",selectedEmployee);addRow(left,"Profile Basic Pay",basic);addRow(left,"Total Allowances",allowance);addRow(left,"Performance Pay",performance);addRow(left,"Gross Salary",totalGross);

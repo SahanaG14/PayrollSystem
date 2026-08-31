@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.util.Base64;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.sql.*;

@@ -2,6 +2,7 @@ import javax.swing.*;import javax.swing.table.*;import java.awt.*;import java.ut
 public final class SettingsEditGuard extends JPanel {
  private final JComponent content;private final JButton edit=new JButton("Edit");private boolean editing;private final Map<Component,Object> snapshot=new IdentityHashMap<>();
  public SettingsEditGuard(JComponent content){super(new BorderLayout());this.content=content;JPanel controls=new JPanel(new FlowLayout(FlowLayout.RIGHT));edit.addActionListener(e->{if(editing){restore();setEditing(false);}else{capture();setEditing(true);}});controls.add(edit);add(content,BorderLayout.CENTER);add(controls,BorderLayout.SOUTH);installLockAfterSave(content);setEditing(false);}
+ public boolean isEditing(){return editing;}
  private void setEditing(boolean value){editing=value;setInputsEnabled(content,value);edit.setText(value?"Cancel":"Edit");}
  private void capture(){snapshot.clear();capture(content);}
  private void capture(Component c){if(c instanceof JTextField f)snapshot.put(c,f.getText());else if(c instanceof JTextArea a)snapshot.put(c,a.getText());else if(c instanceof JComboBox<?> b)snapshot.put(c,b.getSelectedIndex());else if(c instanceof JCheckBox b)snapshot.put(c,b.isSelected());else if(c instanceof JTable t&&t.getModel() instanceof DefaultTableModel m){Object[][] rows=new Object[m.getRowCount()][m.getColumnCount()];for(int r=0;r<m.getRowCount();r++)for(int col=0;col<m.getColumnCount();col++)rows[r][col]=m.getValueAt(r,col);snapshot.put(c,rows);}if(c instanceof Container n)for(Component x:n.getComponents())capture(x);}

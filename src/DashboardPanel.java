@@ -12,7 +12,7 @@ public class DashboardPanel extends JPanel {
     private final DefaultTableModel model=new DefaultTableModel(new String[]{"Timestamp","Module","Action Performed","Performed By","IP / Session ID","Status"},0){public boolean isCellEditable(int r,int c){return false;}};
     private final JTable table=createTable(); private final JTextField search=new JTextField(20); private final JComboBox<String> range=new JComboBox<>(new String[]{"All Time","Today","Last 7 Days","Last 30 Days"});
     public DashboardPanel(PayrollSystemFrame frame) {
-        super(new BorderLayout(14,14)); setBorder(BorderFactory.createEmptyBorder(18,20,18,20)); setDoubleBuffered(true);
+        super(new BorderLayout(8,8)); setBorder(UIStyleUtility.compactModuleBorder()); setDoubleBuffered(true);
         JPanel cards=new JPanel(new GridLayout(1,2,14,0)); cards.add(card("👥  Total Employees",total,"Registered in system",new Color(52,92,145))); cards.add(card("●  Active Employees",active,"Currently active",new Color(46,125,50))); add(cards,BorderLayout.NORTH);
         add(logs(),BorderLayout.CENTER);
         addComponentListener(new java.awt.event.ComponentAdapter(){public void componentShown(java.awt.event.ComponentEvent e){SwingUtilities.invokeLater(DashboardPanel.this::refresh);}});

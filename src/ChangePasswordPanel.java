@@ -4,7 +4,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 
 public class ChangePasswordPanel extends JPanel {
-    public ChangePasswordPanel() { setLayout(new GridLayout(1, 2, 30, 0)); setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28)); buildLogin(); buildMaster(); }
+    public ChangePasswordPanel() { setLayout(new GridLayout(1, 2, 30, 0)); setBorder(UIStyleUtility.compactModuleBorder()); buildLogin(); buildMaster(); }
     public void refresh() { }
     private JPanel card(String title) { JPanel panel = new JPanel(new GridBagLayout()); panel.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1)); GridBagConstraints g = new GridBagConstraints(); g.gridx = 0; g.gridy = 0; g.gridwidth = 2; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL; g.insets = new Insets(16, 12, 12, 12); JLabel heading = new JLabel(title, SwingConstants.CENTER); heading.setFont(new Font("SansSerif", Font.BOLD, 20)); heading.setForeground(new Color(30, 40, 60)); panel.add(heading, g); return panel; }
     private void row(JPanel panel, GridBagConstraints g, int y, String label, JComponent field) { g.gridx = 0; g.gridy = y + 1; g.gridwidth = 1; g.weightx = 0; g.fill = GridBagConstraints.NONE; JLabel text = new JLabel(label); text.setFont(new Font("SansSerif", Font.BOLD, 16)); panel.add(text, g); field.setFont(new Font("SansSerif", Font.PLAIN, 16)); g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL; panel.add(field, g); }

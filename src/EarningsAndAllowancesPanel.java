@@ -65,6 +65,7 @@ public final class EarningsAndAllowancesPanel extends JPanel {
         double workingDays = attendance.workingDays(period.toString()), payableDays = Math.max(0, record.daysPayable);
         if (workingDays <= 0) workingDays = 1;
         if (!attendance.hasSavedAttendance(e.getId(), period.toString())) payableDays = workingDays;
+        else payableDays = LeaveBalanceService.payableDays(e, period, workingDays, record.absentDays, record.paidLeaveDays, record.unpaidLeaveDays, new AttendanceSettingsDAO().load());
         double ratio = Math.min(1, payableDays / workingDays);
         double proratedBasic = Money.round(SalaryRevisionStore.basicFor(e, period) * ratio);
         CTCStore.Value ctc = CTCStore.get(e.getId());

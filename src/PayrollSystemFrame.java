@@ -7,6 +7,8 @@ import java.awt.event.WindowEvent;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Main application shell. Card changes are deliberately lightweight and never wait on an active table editor. */
 public class PayrollSystemFrame extends JFrame {
@@ -31,9 +33,11 @@ public class PayrollSystemFrame extends JFrame {
     private DashboardPanel dashboard;
     private BackupRestorePanel backupRestore;
     private ReportsPanel reports;
+    private HelpPanel help;
     private JComponent masterForm;
     private boolean switching;
     private String activeCard = "Employee";
+    private final Set<String> staleModules = new HashSet<>();
 
     public PayrollSystemFrame() {
         super("Payroll System");
@@ -50,6 +54,7 @@ public class PayrollSystemFrame extends JFrame {
             if (salary != null) salary.refresh();
             if (earningsAndAllowances != null) earningsAndAllowances.refresh();
         });
+        PayrollEvents.onDataChanged(this::markDependentModulesStale);
 
         add(nav(), BorderLayout.WEST);
         add(top(), BorderLayout.NORTH);
@@ -99,14 +104,16 @@ public class PayrollSystemFrame extends JFrame {
 
         sidebarToggle=new JButton("\u2630  MENU");sidebarToggle.setFont(new Font("SansSerif",Font.BOLD,20));sidebarToggle.setForeground(Color.WHITE);sidebarToggle.setOpaque(false);sidebarToggle.setContentAreaFilled(false);sidebarToggle.setBorderPainted(false);sidebarToggle.setFocusPainted(false);sidebarToggle.setToolTipText("Collapse sidebar");sidebarToggle.setMaximumSize(new Dimension(220,45));sidebarToggle.setPreferredSize(new Dimension(220,45));sidebarToggle.setMinimumSize(new Dimension(220,45));sidebarToggle.setAlignmentX(Component.CENTER_ALIGNMENT);sidebarToggle.setHorizontalAlignment(SwingConstants.LEFT);sidebarToggle.setBorder(BorderFactory.createEmptyBorder(0,20,0,16));sidebarToggle.addActionListener(e->toggleSidebar());panel.add(sidebarToggle);
 
-        for (String name : new String[]{"Dashboard", "Master Data", "Employee", "Attendance", "Cost to Company (CTC)", "Earnings & Allowances", "Deductions", "Salary", "Payslip", "Reports", "Settings"}) {
+        for (String name : new String[]{"Dashboard", "Master Data", "Employee", "Attendance", "Cost to Company (CTC)", "Earnings & Allowances", "Deductions", "Salary", "Payslip", "Reports"}) {
             JButton button = navButton(name);
             menuButtons.put(name, button);
             button.addActionListener(event -> requestNavigation(name));
             panel.add(button);
         }
         panel.add(Box.createVerticalGlue());
+        JButton settings=navButton("Settings");menuButtons.put("Settings",settings);settings.addActionListener(e->requestNavigation("Settings"));panel.add(settings);
         JButton backup=navButton("Backup & Restore");menuButtons.put("Backup & Restore",backup);backup.addActionListener(e->requestNavigation("Backup & Restore"));panel.add(backup);
+        JButton helpButton=navButton("Help");menuButtons.put("Help",helpButton);helpButton.addActionListener(e->requestNavigation("Help"));panel.add(helpButton);
         JButton logout=navButton("Logout");menuButtons.put("Logout",logout);logout.addActionListener(e->logout());panel.add(logout);
         return panel;
     }
@@ -116,7 +123,7 @@ public class PayrollSystemFrame extends JFrame {
     private void toggleSidebar(){sidebarCollapsed=!sidebarCollapsed;updateSidebarLayout();}
     private void updateSidebarLayout(){int targetWidth=sidebarCollapsed?60:220;Dimension slotSize=new Dimension(targetWidth,45);sidebarToggle.setText(sidebarCollapsed?"\u2630":"\u2630  MENU");sidebarToggle.setPreferredSize(slotSize);sidebarToggle.setMinimumSize(slotSize);sidebarToggle.setMaximumSize(slotSize);sidebarToggle.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);sidebarToggle.setToolTipText(sidebarCollapsed?"Expand sidebar":"Collapse sidebar");for(JButton button:menuButtons.values()){Dimension size=new Dimension(targetWidth,48);button.setPreferredSize(size);button.setMinimumSize(size);button.setMaximumSize(size);}updateSidebarIcons();int from=sidebar.getPreferredSize().width;new Timer(12,new java.awt.event.ActionListener(){int width=from;public void actionPerformed(java.awt.event.ActionEvent e){width+=Integer.compare(targetWidth,width)*Math.min(20,Math.abs(targetWidth-width));sidebar.setPreferredSize(new Dimension(width,0));sidebar.revalidate();sidebar.repaint();if(width==targetWidth)((Timer)e.getSource()).stop();}}).start();}
     private void updateSidebarIcons(){for(Map.Entry<String,JButton> entry:menuButtons.entrySet()){JButton button=entry.getValue();if(button.getClientProperty("menuText")==null)button.putClientProperty("menuText",button.getText());String text=String.valueOf(button.getClientProperty("menuText"));button.setText(sidebarCollapsed?sidebarIcon(entry.getKey()):text);button.setToolTipText(sidebarCollapsed?text:null);button.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);}}
-    private String sidebarIcon(String name){return switch(name){case "Dashboard"->"\uD83D\uDCCA";case "Master Data"->"\uD83D\uDCC2";case "Employee"->"\uD83D\uDC65";case "Attendance"->"\uD83D\uDCC5";case "Cost to Company (CTC)"->"\uD83D\uDCB0";case "Earnings & Allowances"->"\uD83D\uDCC8";case "Deductions"->"\uD83D\uDCC9";case "Salary"->"\uD83D\uDCBB";case "Payslip"->"\uD83D\uDCC4";case "Reports"->"\uD83D\uDCCA";case "Settings"->"\u2699";case "Backup & Restore"->"\uD83D\uDCBE";case "Logout"->"\u279C";default->"";};}
+    private String sidebarIcon(String name){return switch(name){case "Dashboard"->"\uD83D\uDCCA";case "Master Data"->"\uD83D\uDCC2";case "Employee"->"\uD83D\uDC65";case "Attendance"->"\uD83D\uDCC5";case "Cost to Company (CTC)"->"\uD83D\uDCB0";case "Earnings & Allowances"->"\uD83D\uDCC8";case "Deductions"->"\uD83D\uDCC9";case "Salary"->"\uD83D\uDCBB";case "Payslip"->"\uD83D\uDCC4";case "Reports"->"\uD83D\uDCCA";case "Settings"->"\u2699";case "Backup & Restore"->"\uD83D\uDCBE";case "Help"->"?\u20DD";case "Logout"->"\u279C";default->"";};}
 
     private void logout(){String username=Session.currentUser;AuditLogDAO.logActivity(username,"USER_LOGOUT","User logged out of system",new java.sql.Timestamp(System.currentTimeMillis()));Session.logout();dispose();SwingUtilities.invokeLater(()->new LoginFrame().setVisible(true));}
 
@@ -128,7 +135,7 @@ public class PayrollSystemFrame extends JFrame {
         panel.add(moduleTitle, BorderLayout.WEST);
         JButton refresh = new JButton("↻");
         refresh.setFont(new Font("SansSerif", Font.BOLD, 24));
-        refresh.setToolTipText("Refresh");
+        refresh.setToolTipText("Refresh current module");
         refresh.setFocusPainted(false);
         refresh.setMargin(new Insets(1, 8, 3, 8));
         refresh.addActionListener(event -> refreshActiveModule());
@@ -140,10 +147,23 @@ public class PayrollSystemFrame extends JFrame {
 
     /** Reloads the visible module without requiring the user to leave and re-open its tab. */
     private void refreshActiveModule() {
-        stopActiveEditing(content);
+        Component visible = visibleModule();
+        if (hasUnsavedEdits(visible) && JOptionPane.showConfirmDialog(this, "Unsaved changes are present. Refreshing will discard them. Do you want to continue?", "Refresh", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+        stopActiveEditing(visible);
         refreshModule(activeCard);
+        staleModules.remove(activeCard);
         content.revalidate();
         content.repaint();
+    }
+
+    private void markDependentModulesStale(String event) {
+        switch (event) {
+            case "employee" -> staleModules.addAll(java.util.List.of("Employee", "Attendance", "CTC", "Earnings & Allowances", "Deductions", "Salary", "Payslip", "Reports", "Dashboard"));
+            case "attendance", "ctc", "earnings", "deductions", "settings" -> staleModules.addAll(java.util.List.of("CTC", "Earnings & Allowances", "Deductions", "Salary", "Payslip", "Reports", "Dashboard"));
+            case "restore" -> staleModules.addAll(java.util.List.of("Employee", "Master Data", "Attendance", "CTC", "Earnings & Allowances", "Deductions", "Salary", "Payslip", "Reports", "Dashboard", "Backup & Restore"));
+            default -> { return; }
+        }
+        if (staleModules.contains(activeCard) && !hasUnsavedEdits(content)) { refreshModule(activeCard); staleModules.remove(activeCard); }
     }
 
     private void requestNavigation(String menu) {
@@ -180,7 +200,7 @@ public class PayrollSystemFrame extends JFrame {
 
     private JComponent employeeView() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(22, 22, 22, 22));
+        panel.setBorder(UIStyleUtility.compactModuleBorder());
         JLabel heading = new JLabel("Active Employees (Master Data)");
         heading.setFont(new Font("SansSerif", Font.BOLD, 24));
         search = new JTextField(16);
@@ -268,6 +288,7 @@ public class PayrollSystemFrame extends JFrame {
         try {
             stopActiveEditing(content);
             ensureModule(name);
+            if (staleModules.contains(name) && !hasUnsavedEdits(content)) { refreshModule(name); staleModules.remove(name); }
             TabStyle.apply(content);
             cards.show(content, name);
             activeCard = name;
@@ -317,6 +338,8 @@ public class PayrollSystemFrame extends JFrame {
             payroll = new PayrollPanel(this); content.add(payroll, "Payslip");
         } else if ("Reports".equals(name) && reports == null) {
             reports = new ReportsPanel(); content.add(reports, "Reports");
+        } else if ("Help".equals(name) && help == null) {
+            help = new HelpPanel(); content.add(help, "Help");
         } else if ("Backup & Restore".equals(name) && backupRestore == null) {
             backupRestore = new BackupRestorePanel(); content.add(backupRestore, "Backup & Restore");
         }
@@ -378,4 +401,11 @@ public class PayrollSystemFrame extends JFrame {
             for (Component child : container.getComponents()) stopActiveEditing(child);
         }
     }
+    private static boolean hasUnsavedEdits(Component component) {
+        if (component instanceof JTable table && table.isEditing()) return true;
+        if (component instanceof SettingsEditGuard guard && guard.isEditing()) return true;
+        if (component instanceof Container container) for (Component child : container.getComponents()) if (hasUnsavedEdits(child)) return true;
+        return false;
+    }
+    private Component visibleModule() { for (Component child : content.getComponents()) if (child.isVisible()) return child; return content; }
 }
