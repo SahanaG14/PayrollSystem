@@ -35,7 +35,7 @@ public final class ActivityLogger {
     private static void append(Entry e) { try { Files.writeString(FILE,e.timestamp.format(FORMAT)+"|"+enc(e.module)+"|"+enc(e.action)+"|"+enc(e.details)+"|"+enc(e.user)+"|"+enc(e.session)+"|"+enc(e.status)+"\n",StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.APPEND); } catch(IOException ignored) {} }
     private static String enc(String s) { return Base64.getUrlEncoder().encodeToString(clean(s).getBytes(StandardCharsets.UTF_8)); }
     private static String un(String s) { try{return new String(Base64.getUrlDecoder().decode(s),StandardCharsets.UTF_8);}catch(Exception e){return "";} }
-    private static String csv(String s) { return "\""+clean(s).replace("\"","\"\"")+"\""; }
+    private static String csv(String s) { String value=clean(s);if(!value.isEmpty()&&"=+-@".indexOf(value.charAt(0))>=0)value="'"+value;return "\""+value.replace("\"","\"\"")+"\""; }
     private static String clean(String s) { return s==null?"":s.replace('\n',' ').replace('\r',' '); }
     private ActivityLogger() {}
 }

@@ -5,6 +5,18 @@ import javax.swing.UIManager;
 
 public class Main {
     public static void main(String[] args) {
+        if (!LicenseService.isConfigured()) {
+            javax.swing.JOptionPane.showMessageDialog(null, "This installation has no licensing server configured.\nSet -Dpayroll.license.url=https://your-worker.workers.dev before distributing it.", "Licensing setup required", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        LicenseService.Result license = LicenseService.validateSavedLicense();
+        if (!license.allowed()) {
+            EventQueue.invokeLater(() -> new LicenseActivationFrame().setVisible(true));
+            return;
+        }
+        startApplication();
+    }
+    static void startApplication() {
         DatabaseInitializer.initialize();
         AutoSaveService.start();
         Runtime.getRuntime().addShutdownHook(new Thread(AutoSaveService::shutdown,"Payroll-Recovery-Flush"));
@@ -30,7 +42,8 @@ public class Main {
             UIManager.put("TabbedPane.font", new java.awt.Font("SansSerif", java.awt.Font.BOLD, 18));
             UIManager.put("Table.font", new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 18));
             UIManager.put("TableHeader.font", new java.awt.Font("SansSerif", java.awt.Font.BOLD, 18));
-            new LoginFrame().setVisible(true);
+            openLogin();
         });
     }
+    static void openLogin() { new LoginFrame().setVisible(true); }
 }
