@@ -58,7 +58,25 @@ Usage:
     process.exit(0);
   }
 
-  if (command === '--key' || command === 'disable') {
+  if (command === '--list' || command === 'list') {
+    console.log(`Fetching registered licenses from server...`);
+    const { status, data } = await api('/v1/admin/licenses', 'GET');
+    if (status === 200 && data.results) {
+      console.log(`\n📋 Registered Licenses & Activations (${data.results.length} records):`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      for (const row of data.results) {
+        const activeStatus = row.active ? '🟢 ACTIVE' : '🔴 DISABLED';
+        const activationInfo = row.activation_id
+          ? `Activation #${row.activation_id} | Machine: "${row.machine_name || 'Unknown'}" | Revoked: ${row.revoked_at || 'No'}`
+          : `(No computers activated yet)`;
+        console.log(`ID: ${row.id} | Status: ${activeStatus} | Max Seats: ${row.max_seats} | Created: ${row.created_at}`);
+        console.log(`  └─ ${activationInfo}`);
+      }
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+    } else {
+      console.error(`❌ Failed to list licenses:`, data);
+    }
+  } else if (command === '--key' || command === 'disable') {
     console.log(`Disabling license key: ${target}...`);
     const { status, data } = await api('/v1/admin/licenses/disable', 'POST', { licenseKey: target });
     if (status === 200 && data.disabled) {
