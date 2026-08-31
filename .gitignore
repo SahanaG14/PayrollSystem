@@ -55,3 +55,8 @@ target/
 .run/
 *.iml
 template-preview.png
+.env
+.wrangler/
+wrangler.toml
+license-server/.env
+license-server/.wrangler/

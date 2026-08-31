@@ -1,35 +1,73 @@
-# Payroll System licensing service
+# Payroll System Licensing Service
 
-This Worker issues **lifetime** licenses: a record has no expiry date, and each license can be activated only up to its configured number of computers.
+This licensing service issues **lifetime** licenses for Payroll System. Each license is verified online against Cloudflare D1 and is bound to the customer's machine(s) up to the allowed seat limit.
 
-## Deploy
+- **Production API Endpoint**: `https://payroll-license-api.adityapdixit.workers.dev`
 
-1. Create a free Cloudflare account and install Wrangler.
-2. From this folder, create a D1 database: `npx wrangler d1 create payroll-licenses`.
-3. Copy `wrangler.toml.example` to `wrangler.toml` and insert the database ID returned above.
-4. Apply the schema: `npx wrangler d1 execute payroll-licenses --remote --file=schema.sql`.
-5. Set an administrator secret (use a long random value): `npx wrangler secret put ADMIN_SECRET`.
-6. Deploy: `npx wrangler deploy`.
+---
 
-Set the application launch option to the deployed address, for example:
+## 🔑 How to Generate a New License Key
 
-`-Dpayroll.license.url=https://payroll-license-api.<your-subdomain>.workers.dev`
+### Quick CLI Method (Recommended)
 
-For a packaged installer, put that JVM option in its launcher configuration before distributing it. Do not allow end users to change it.
+Make sure you have Node.js installed and `ADMIN_SECRET` configured in `license-server/.env`.
 
-## Create a license after a one-time purchase
-
-Generate a long random key (for example `PAY-` followed by 32 random characters) and retain it only long enough to deliver it to the buyer. Then call:
-
-```sh
-curl -X POST https://YOUR-WORKER.workers.dev/v1/admin/licenses \
-  -H 'Authorization: Bearer YOUR_ADMIN_SECRET' \
-  -H 'Content-Type: application/json' \
-  -d '{"licenseKey":"PAY-EXAMPLE-KEY","maxSeats":1}'
+#### 1. Generate a single-seat license (default: 1 computer)
+```bash
+node license-server/create-license.mjs 1
 ```
 
-The Worker stores only a SHA-256 hash of the license key. To move a customer to a replacement computer, revoke their activation through `POST /v1/admin/activations/{activationId}/revoke`, then have them activate the new computer. Keep `ADMIN_SECRET` private; never put it in the desktop application.
+**Example Output:**
+```text
+🎉 License Key Generated & Registered:
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Key       : PAY-5S53-VCR3-KTY9-TJWN
+   Max Seats : 1
+   Server    : https://payroll-license-api.adityapdixit.workers.dev
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
-## Important security note
+#### 2. Generate a multi-seat license (e.g., 5 computers)
+```bash
+node license-server/create-license.mjs 5
+```
 
-This is a practical licensing control, not unbreakable DRM. A determined attacker can alter a local Java application. Code signing, obfuscation, signed server responses, and a proper admin dashboard are sensible later additions as sales grow.
+#### 3. Register a specific custom license key
+```bash
+node license-server/create-license.mjs 1 PAY-COMPANY-2026-X89
+```
+
+---
+
+### Manual cURL Method
+
+You can also create a license directly by making a POST request to the API:
+
+```bash
+curl -X POST https://payroll-license-api.adityapdixit.workers.dev/v1/admin/licenses \
+  -H "Authorization: Bearer YOUR_ADMIN_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"licenseKey":"PAY-CUSTOM-KEY-HERE","maxSeats":1}'
+```
+
+---
+
+## 🔄 Moving a Customer to a Replacement Computer
+
+If a customer replaces their computer or needs their activation reset:
+
+1. Revoke their previous activation:
+```bash
+curl -X POST https://payroll-license-api.adityapdixit.workers.dev/v1/admin/activations/<ACTIVATION_ID>/revoke \
+  -H "Authorization: Bearer YOUR_ADMIN_SECRET"
+```
+2. Have the customer launch Payroll System on their new machine and enter their existing license key to activate it.
+
+---
+
+## 🔒 Security Best Practices
+
+- The server stores only cryptographic **SHA-256 hashes** of license keys.
+- **Never share or commit `ADMIN_SECRET`** into source control or include it in client desktop builds.
+- The desktop app uses `LicenseService.java` to validate licenses at launch.
+
