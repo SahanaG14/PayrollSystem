@@ -33,6 +33,7 @@ public class PayrollSystemFrame extends JFrame {
     private ReportsPanel reports;
     private JComponent masterForm;
     private boolean switching;
+    private String activeCard = "Employee";
 
     public PayrollSystemFrame() {
         super("Payroll System");
@@ -125,7 +126,24 @@ public class PayrollSystemFrame extends JFrame {
         moduleTitle = new JLabel("Employee");
         moduleTitle.setFont(new Font("SansSerif", Font.BOLD, 22));
         panel.add(moduleTitle, BorderLayout.WEST);
+        JButton refresh = new JButton("↻");
+        refresh.setFont(new Font("SansSerif", Font.BOLD, 24));
+        refresh.setToolTipText("Refresh");
+        refresh.setFocusPainted(false);
+        refresh.setMargin(new Insets(1, 8, 3, 8));
+        refresh.addActionListener(event -> refreshActiveModule());
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        actions.add(refresh);
+        panel.add(actions, BorderLayout.EAST);
         return panel;
+    }
+
+    /** Reloads the visible module without requiring the user to leave and re-open its tab. */
+    private void refreshActiveModule() {
+        stopActiveEditing(content);
+        refreshModule(activeCard);
+        content.revalidate();
+        content.repaint();
     }
 
     private void requestNavigation(String menu) {
@@ -150,6 +168,7 @@ public class PayrollSystemFrame extends JFrame {
                 deductions = panel;
             }
             cards.show(content, "Deductions");
+            activeCard = "Deductions";
             selectMenu("Deductions");
             content.revalidate();
             content.repaint();
@@ -251,6 +270,7 @@ public class PayrollSystemFrame extends JFrame {
             ensureModule(name);
             TabStyle.apply(content);
             cards.show(content, name);
+            activeCard = name;
             selectMenu(name);
             content.revalidate();
             content.repaint();
