@@ -47,12 +47,45 @@ export default {
       return licensed(request, env, pathname === "/v1/activate");
     }
     if (!authorized(request, env)) return json({ message: "Unauthorized" }, 401);
+    if (request.method === "GET" && pathname === "/v1/admin/licenses") {
+      const rows = await env.DB.prepare(`
+        SELECT l.id, l.max_seats, l.active, l.expires_at, l.created_at,
+               a.id AS activation_id, a.machine_id, a.machine_name, a.activated_at, a.last_seen_at, a.revoked_at
+        FROM licenses l
+        LEFT JOIN activations a ON a.license_id = l.id
+        ORDER BY l.id DESC
+      `).all();
+      return json({ results: rows.results });
+    }
     if (request.method === "POST" && pathname === "/v1/admin/licenses") {
       const input = await request.json().catch(() => ({}));
       const seats = Number(input.maxSeats || 1);
       if (!input.licenseKey || !Number.isInteger(seats) || seats < 1 || seats > 10000) return json({ message: "licenseKey and maxSeats are required." }, 400);
       try { await env.DB.prepare("INSERT INTO licenses (key_hash, max_seats) VALUES (?, ?)").bind(await hash(input.licenseKey.trim()), seats).run(); return json({ created: true, maxSeats: seats }, 201); }
       catch { return json({ message: "That license key already exists." }, 409); }
+    }
+    if (request.method === "POST" && pathname === "/v1/admin/licenses/disable") {
+      const input = await request.json().catch(() => ({}));
+      if (!input.licenseKey) return json({ message: "licenseKey is required." }, 400);
+      const keyHash = await hash(input.licenseKey.trim());
+      const res = await env.DB.prepare("UPDATE licenses SET active = 0 WHERE key_hash = ?").bind(keyHash).run();
+      return json({ disabled: res.meta && res.meta.changes > 0 });
+    }
+    if (request.method === "POST" && pathname === "/v1/admin/licenses/enable") {
+      const input = await request.json().catch(() => ({}));
+      if (!input.licenseKey) return json({ message: "licenseKey is required." }, 400);
+      const keyHash = await hash(input.licenseKey.trim());
+      const res = await env.DB.prepare("UPDATE licenses SET active = 1 WHERE key_hash = ?").bind(keyHash).run();
+      return json({ enabled: res.meta && res.meta.changes > 0 });
+    }
+    if (request.method === "POST" && pathname === "/v1/admin/licenses/revoke-activations") {
+      const input = await request.json().catch(() => ({}));
+      if (!input.licenseKey) return json({ message: "licenseKey is required." }, 400);
+      const keyHash = await hash(input.licenseKey.trim());
+      const license = await env.DB.prepare("SELECT id FROM licenses WHERE key_hash = ?").bind(keyHash).first();
+      if (!license) return json({ message: "License not found." }, 404);
+      const res = await env.DB.prepare("UPDATE activations SET revoked_at = CURRENT_TIMESTAMP WHERE license_id = ? AND revoked_at IS NULL").bind(license.id).run();
+      return json({ revokedCount: res.meta ? res.meta.changes : 0 });
     }
     const revoke = pathname.match(/^\/v1\/admin\/activations\/(\d+)\/revoke$/);
     if (request.method === "POST" && revoke) { await env.DB.prepare("UPDATE activations SET revoked_at = CURRENT_TIMESTAMP WHERE id = ?").bind(revoke[1]).run(); return json({ revoked: true }); }

@@ -52,16 +52,31 @@ curl -X POST https://payroll-license-api.adityapdixit.workers.dev/v1/admin/licen
 
 ---
 
-## 🔄 Moving a Customer to a Replacement Computer
+## 🚫 How to Revoke / Manage Licenses
 
-If a customer replaces their computer or needs their activation reset:
+You can manage license states using the [`license-server/revoke-license.mjs`](file:///Users/adityadixit/Desktop/PayrollSystem/license-server/revoke-license.mjs) CLI tool:
 
-1. Revoke their previous activation:
+### 1. Disable / Revoke an Entire License Key (e.g., Refund or Chargeback)
+Permanently disables the license key so no machine can use it:
 ```bash
-curl -X POST https://payroll-license-api.adityapdixit.workers.dev/v1/admin/activations/<ACTIVATION_ID>/revoke \
-  -H "Authorization: Bearer YOUR_ADMIN_SECRET"
+node license-server/revoke-license.mjs --key PAY-XXXX-XXXX-XXXX-XXXX
 ```
-2. Have the customer launch Payroll System on their new machine and enter their existing license key to activate it.
+
+### 2. Reset Activations for a Customer (e.g., New Computer / Replaced PC)
+Clears all active computer bindings for a license key so the customer can activate their new machine without needing a new key:
+```bash
+node license-server/revoke-license.mjs --reset PAY-XXXX-XXXX-XXXX-XXXX
+```
+
+### 3. Revoke a Specific Computer Activation by ID
+```bash
+node license-server/revoke-license.mjs --activation <ACTIVATION_ID>
+```
+
+### 4. Re-Enable a Disabled License Key
+```bash
+node license-server/revoke-license.mjs --enable PAY-XXXX-XXXX-XXXX-XXXX
+```
 
 ---
 
@@ -70,4 +85,5 @@ curl -X POST https://payroll-license-api.adityapdixit.workers.dev/v1/admin/activ
 - The server stores only cryptographic **SHA-256 hashes** of license keys.
 - **Never share or commit `ADMIN_SECRET`** into source control or include it in client desktop builds.
 - The desktop app uses `LicenseService.java` to validate licenses at launch.
+
 
