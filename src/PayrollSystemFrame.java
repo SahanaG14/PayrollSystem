@@ -13,6 +13,8 @@ import java.util.Set;
 
 /** Main application shell. Card changes are deliberately lightweight and never wait on an active table editor. */
 public class PayrollSystemFrame extends JFrame {
+    private static final Color SIDEBAR_NORMAL = new Color(30, 41, 59);
+    private static final Color SIDEBAR_SELECTED = new Color(0x35, 0x67, 0x9C);
     private final CardLayout cards = new CardLayout();
     private final JPanel content = new JPanel(cards);
     private final EmployeeDAO employees = new EmployeeDAO();
@@ -38,6 +40,7 @@ public class PayrollSystemFrame extends JFrame {
     private JComponent masterForm;
     private boolean switching;
     private String activeCard = "Employee";
+    private String selectedSidebarModule = "Dashboard";
     private final Set<String> staleModules = new HashSet<>();
     private final Set<String> styledModules = new HashSet<>();
 
@@ -132,8 +135,9 @@ public class PayrollSystemFrame extends JFrame {
 
     private void toggleSidebar(){sidebarCollapsed=!sidebarCollapsed;updateSidebarLayout();}
     private void updateSidebarLayout(){int targetWidth=sidebarCollapsed?60:220;Dimension slotSize=new Dimension(targetWidth,45);sidebarToggle.setText(sidebarCollapsed?"":"MENU");sidebarToggle.setPreferredSize(slotSize);sidebarToggle.setMinimumSize(slotSize);sidebarToggle.setMaximumSize(slotSize);sidebarToggle.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);sidebarToggle.setToolTipText(sidebarCollapsed?"Expand sidebar":"Collapse sidebar");for(JButton button:menuButtons.values()){Dimension size=new Dimension(targetWidth,48);button.setPreferredSize(size);button.setMinimumSize(size);button.setMaximumSize(size);}updateSidebarIcons();int from=sidebar.getPreferredSize().width;new Timer(12,new java.awt.event.ActionListener(){int width=from;public void actionPerformed(java.awt.event.ActionEvent e){width+=Integer.compare(targetWidth,width)*Math.min(20,Math.abs(targetWidth-width));sidebar.setPreferredSize(new Dimension(width,0));sidebar.revalidate();sidebar.repaint();if(width==targetWidth)((Timer)e.getSource()).stop();}}).start();}
-    private void updateSidebarIcons(){for(Map.Entry<String,JButton> entry:menuButtons.entrySet()){JButton button=entry.getValue();if(button.getClientProperty("menuText")==null)button.putClientProperty("menuText",button.getText());String text=String.valueOf(button.getClientProperty("menuText"));button.setIcon(moduleIconFor(entry.getKey()));button.setText(sidebarCollapsed?"":text);button.setToolTipText(sidebarCollapsed?text:null);button.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);}}
-    private ImageIcon moduleIconFor(String name){String resource=switch(name){case "Dashboard"->"dashboard";case "Master Data"->"master-data";case "Employee"->"employee";case "Attendance"->"attendance";case "Cost to Company (CTC)"->"ctc";case "Earnings & Allowances"->"earnings";case "Deductions"->"deductions";case "Salary"->"salary";case "Payslip"->"payslip";case "Reports"->"reports";case "Settings"->"settings";case "Backup & Restore"->"backup";case "Help"->"help";case "Logout"->"logout";default->"menu";};return Branding.moduleIcon(resource,20,20);}
+    private void updateSidebarIcons(){for(Map.Entry<String,JButton> entry:menuButtons.entrySet()){JButton button=entry.getValue();if(button.getClientProperty("menuText")==null)button.putClientProperty("menuText",button.getText());String text=String.valueOf(button.getClientProperty("menuText"));button.setText(sidebarCollapsed?"":text);button.setToolTipText(sidebarCollapsed?text:null);button.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);}applySelectedSidebarStyle();}
+    private ImageIcon moduleIconFor(String name,boolean selected){String resource=switch(name){case "Dashboard"->"dashboard";case "Master Data"->"master-data";case "Employee"->"employee";case "Attendance"->"attendance";case "Cost to Company (CTC)"->"ctc";case "Earnings & Allowances"->"earnings";case "Deductions"->"deductions";case "Salary"->"salary";case "Payslip"->"payslip";case "Reports"->"reports";case "Settings"->"settings";case "Backup & Restore"->"backup";case "Help"->"help";case "Logout"->"logout";default->"menu";};return selected?Branding.whiteModuleIcon(resource,20,20):Branding.moduleIcon(resource,20,20);}
+    private ImageIcon moduleIconFor(String name){return moduleIconFor(name,false);}
 
     private void logout(){if(JOptionPane.showConfirmDialog(this,"Are you sure you want to Logout?","Logout",JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE)!=JOptionPane.YES_OPTION)return;String username=Session.currentUser;AuditLogDAO.logActivity(username,"USER_LOGOUT","User logged out of system",new java.sql.Timestamp(System.currentTimeMillis()));Session.logout();dispose();SwingUtilities.invokeLater(()->new LoginFrame().setVisible(true));}
 
@@ -368,29 +372,22 @@ public class PayrollSystemFrame extends JFrame {
 
     private void selectMenu(String card) {
         String menu = "CTC".equals(card) ? "Cost to Company (CTC)" : "Master Form".equals(card) ? "Master Data" : card;
-        Color defaultBackground = new Color(30, 41, 59), activeBackground = new Color(71, 85, 105);
-        for (JButton button : menuButtons.values()) {
-            button.putClientProperty("active", Boolean.FALSE);
-            button.setBackground(defaultBackground);
-            button.setForeground(Color.WHITE);
-            button.setOpaque(false);
-            button.setContentAreaFilled(false);
-        }
-        JButton activeButton = menuButtons.get(menu);
-        if (activeButton != null) {
-            activeButton.putClientProperty("active", Boolean.TRUE);
-            activeButton.setBackground(activeBackground);
-            activeButton.setForeground(Color.WHITE);
-            activeButton.setOpaque(false);
-            activeButton.setContentAreaFilled(false);
-        }
+        selectedSidebarModule = menu;
+        applySelectedSidebarStyle();
         menuButtons.values().forEach(button -> { button.revalidate(); button.repaint(); });
         if (moduleTitle != null) moduleTitle.setText(menu);
     }
 
+    private void applySelectedSidebarStyle(){for(Map.Entry<String,JButton> entry:menuButtons.entrySet())applySidebarButtonStyle(entry.getKey(),entry.getValue(),entry.getKey().equals(selectedSidebarModule));}
+
+    /** Single owner of normal/selected sidebar appearance; called after every navigation and layout refresh. */
+    private void applySidebarButtonStyle(String module,JButton button,boolean selected){
+        button.putClientProperty("active",selected);button.setBackground(selected?SIDEBAR_SELECTED:SIDEBAR_NORMAL);button.setForeground(Color.WHITE);button.setIcon(moduleIconFor(module,selected));button.setFocusPainted(false);button.setOpaque(false);button.setContentAreaFilled(false);
+    }
+
     private static final class RoundedNavButton extends JButton {
         RoundedNavButton(String text) { super(text); setOpaque(false); setContentAreaFilled(false); setRolloverEnabled(true); }
-        @Override protected void paintComponent(Graphics graphics) { Graphics2D g = (Graphics2D) graphics.create(); try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); boolean active = Boolean.TRUE.equals(getClientProperty("active")), hover = getModel().isRollover(); g.setColor(active ? new Color(71, 85, 105) : hover ? new Color(36, 60, 84) : new Color(30, 41, 59)); g.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24); if(active){g.setColor(new Color(203, 213, 225));g.fillRoundRect(0, 9, 5, Math.max(0,getHeight()-18), 5, 5);} } finally { g.dispose(); }
+        @Override protected void paintComponent(Graphics graphics) { Graphics2D g = (Graphics2D) graphics.create(); try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); boolean active = Boolean.TRUE.equals(getClientProperty("active")), hover = getModel().isRollover(); g.setColor(active ? SIDEBAR_SELECTED : hover ? new Color(36, 60, 84) : SIDEBAR_NORMAL); g.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24); if(active){g.setColor(Color.WHITE);g.fillRoundRect(0, 9, 5, Math.max(0,getHeight()-18), 5, 5);} } finally { g.dispose(); }
             // BasicButtonUI paints the retained ImageIcon and text.  Omitting this call was the cause of blank collapsed buttons.
             super.paintComponent(graphics);
         }

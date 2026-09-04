@@ -19,6 +19,7 @@ public final class Branding {
     private static BufferedImage applicationIcon;
     /** Strong references keep navigation images available through card changes and L&F updates. */
     private static final Map<String,ImageIcon> MODULE_ICONS=new HashMap<>();
+    private static final Map<String,ImageIcon> WHITE_MODULE_ICONS=new HashMap<>();
     private static ImageIcon missingModuleIcon;
     private Branding() { }
     private static synchronized BufferedImage logo(){if(logo!=null)return logo;try(InputStream input=Branding.class.getResourceAsStream("/yasl-logo.png")){if(input!=null)logo=ImageIO.read(input);if(logo==null)logo=ImageIO.read(new File("assets/yasl-logo.png"));}catch(Exception ignored){}return logo;}
@@ -47,6 +48,13 @@ public final class Branding {
             System.err.println("Unable to load icon resource "+resourcePath+": "+exception.getMessage());
             return missingModuleIcon(width,height);
         }
+    }
+    /** White navigation variant used only on the selected sidebar item. */
+    public static synchronized ImageIcon whiteModuleIcon(String name,int width,int height){
+        String key=name+"@"+width+"x"+height;ImageIcon cached=WHITE_MODULE_ICONS.get(key);if(cached!=null)return cached;
+        Image image=moduleIcon(name,width,height).getImage();BufferedImage white=new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);Graphics2D g=white.createGraphics();g.drawImage(image,0,0,width,height,null);g.dispose();
+        for(int y=0;y<height;y++)for(int x=0;x<width;x++){int alpha=(white.getRGB(x,y)>>>24)&0xFF;if(alpha!=0)white.setRGB(x,y,(alpha<<24)|0x00FFFFFF);}
+        ImageIcon icon=new ImageIcon(white);WHITE_MODULE_ICONS.put(key,icon);return icon;
     }
     private static ImageIcon missingModuleIcon(int width,int height){
         if(missingModuleIcon==null){
