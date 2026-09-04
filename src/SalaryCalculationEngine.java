@@ -13,24 +13,13 @@ public final class SalaryCalculationEngine {
         double ratio = Math.min(1.0, payableDays / workingDays);
         double basic = Money.round(SalaryRevisionStore.basicFor(employee, period) * ratio);
         MonthlyEarningsStore.Value saved = MonthlyEarningsStore.get(employee.getId(), period.toString());
-        boolean fullAttendance = payableDays >= workingDays && workingDays > 0;
-        CTCStore.Value ctc = CTCStore.get(employee.getId());
-        double hra = ctc.hraOverride ? Money.round(basic * ctc.hraOverridePercent / 100.0) : allowance("HRA", basic, 40, true);
-        double bonus = employee.isWagesStructure() && fullAttendance ? allowance("Attendance Bonus", basic, PayrollRulesStore.attendanceBonus(), false) : 0.0;
-        double conveyance = allowance("Conveyance Allowance", basic, PayrollRulesStore.conveyance(), false);
-        double performance = allowance("Performance Pay", basic, 0.0, false);
-        double medical = allowance("Medical Allowance", basic, PayrollRulesStore.medical(), false);
-        double special = allowance("Special Allowance", basic, 15, true);
-        double fixed = allowance("Fixed Allowance", basic, 0.0, false);
-        double other;
+        double[] monthlyAllowances=EarningsAndAllowancesPanel.displayedValues(employee,period);
+        double hra=monthlyAllowances[0],bonus=monthlyAllowances[1],conveyance=monthlyAllowances[2],performance=monthlyAllowances[3],medical=monthlyAllowances[4],special=monthlyAllowances[5],fixed=monthlyAllowances[6];
+        double other=employee.isWagesStructure()?monthlyAllowances[7]+monthlyAllowances[8]:0.0;
         if (saved != null) {
             if (saved.basic > 0) basic = saved.basic;
-            hra = saved.hra; bonus = employee.isWagesStructure() && fullAttendance ? saved.attendance : 0.0; conveyance = saved.conveyance;
+            hra = saved.hra; bonus = employee.isWagesStructure() ? saved.attendance : 0.0; conveyance = saved.conveyance;
             performance = saved.performance; medical = saved.medical; special = saved.special; fixed = saved.fixed;
-            other = employee.isWagesStructure() ? Money.round(saved.overtime + saved.reimbursements) : 0.0;
-        } else {
-            double hourlyRate = PayrollCalculator.effectiveOtRate(basic, workingDays * PayrollRulesStore.workingHours());
-            other = employee.isWagesStructure() ? Money.round(hourlyRate * Math.max(0, record.overtimeHours + record.otherHours)) : 0.0;
         }
         double allowances = Money.round(hra + bonus + conveyance + performance + medical + special + fixed);
         double gross = Money.round(basic + allowances + other);

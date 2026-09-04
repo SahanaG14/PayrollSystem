@@ -69,19 +69,18 @@ public final class EarningsAndAllowancesPanel extends JPanel {
         double ratio = Math.min(1, payableDays / workingDays);
         double proratedBasic = Money.round(SalaryRevisionStore.basicFor(e, period) * ratio);
         CTCStore.Value ctc = CTCStore.get(e.getId());
-        double hra = ctc.hraOverride ? Money.round(proratedBasic * ctc.hraOverridePercent / 100.0) : allowance("HRA", proratedBasic, 40);
-        boolean fullAttendance = payableDays >= workingDays && workingDays > 0;
-        double configuredBonus = CompanyPolicyStore.hasAllowance("Attendance Bonus") ? CompanyPolicyStore.allowance("Attendance Bonus") : 0.0;
-        double attendanceBonus = e.isWagesStructure() && fullAttendance ? Money.round(CompanyPolicyStore.percentage("Attendance Bonus") ? proratedBasic * configuredBonus / 100.0 : configuredBonus) : 0.0;
-        double conveyance = allowance("Conveyance Allowance", proratedBasic, PayrollRulesStore.conveyance());
-        double performance = allowance("Performance Pay", proratedBasic, 0);
-        double medical = allowance("Medical Allowance", proratedBasic, PayrollRulesStore.medical());
-        double special = allowance("Special Allowance", proratedBasic, 15);
-        double fixed = allowance("Fixed Allowance", proratedBasic, 0);
+        double hra = monthlyCtc(ctc.hra, ratio);
+        double attendanceBonus = e.isWagesStructure() ? monthlyCtc(ctc.attendance, ratio) : 0.0;
+        double conveyance = monthlyCtc(ctc.conveyance, ratio);
+        double performance = monthlyCtc(ctc.performance, ratio);
+        double medical = monthlyCtc(ctc.medical, ratio);
+        double special = monthlyCtc(ctc.special, ratio);
+        double fixed = monthlyCtc(ctc.fixed, ratio);
         double hourlyRate = PayrollCalculator.effectiveOtRate(SalaryRevisionStore.basicFor(e, period), workingDays * PayrollRulesStore.workingHours());
         return new double[]{hra, attendanceBonus, conveyance, performance, medical, special, fixed, e.isWagesStructure() ? Money.round(hourlyRate * Math.max(0, record.overtimeHours)) : 0.0, e.isWagesStructure() ? Money.round(hourlyRate * Math.max(0, record.otherHours)) : 0.0};
     }
 
+    private static double monthlyCtc(double annualValue,double attendanceRatio){return annualValue<=0?0:annualValue/12.0*attendanceRatio;}
     private static boolean zeroAllowances(MonthlyEarningsStore.Value value) { return value.hra == 0 && value.attendance == 0 && value.conveyance == 0 && value.performance == 0 && value.medical == 0 && value.special == 0 && value.fixed == 0; }
     private static Object[][] copyRows(Object[][] source) { Object[][] copy=new Object[source.length][]; for(int row=0;row<source.length;row++) copy[row]=java.util.Arrays.copyOf(source[row],source[row].length); return copy; }
     private static Object[][] copyModel(DefaultTableModel model) { Object[][] copy=new Object[model.getRowCount()][model.getColumnCount()]; for(int row=0;row<copy.length;row++) for(int column=0;column<copy[row].length;column++) copy[row][column]=model.getValueAt(row,column); return copy; }
