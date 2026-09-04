@@ -17,9 +17,5 @@ public final class LeaveBalanceService {
         }
         return carry;
     }
-    public static double payableDays(Employee employee, YearMonth period, double workingDays, double absent, double clUsed, double elUsed, AttendanceSettings settings) {
-        double clAvailable = Math.max(0, settings.casualLeaveLimit) + carryForward(employee, period, true, settings);
-        double elAvailable = Math.max(0, settings.earnedLeaveLimit) + carryForward(employee, period, false, settings);
-        return Money.round(Math.max(0, workingDays - Math.max(0, absent) - Math.max(0, clUsed - clAvailable) - Math.max(0, elUsed - elAvailable)));
-    }
+    public static double payableDays(Employee employee, YearMonth period, double workingDays, double absent, double clUsed, double elUsed, AttendanceSettings settings) { return LeaveLedgerService.payableDays(employee,period,workingDays,absent,clUsed,elUsed,settings); }
 }

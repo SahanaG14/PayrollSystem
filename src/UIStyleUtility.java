@@ -85,7 +85,7 @@ public final class UIStyleUtility {
         public Component getTableCellRendererComponent(JTable table, Object value, boolean selected, boolean focused, int row, int column) {
             super.getTableCellRendererComponent(table, value, selected, focused, row, column);
             boolean numeric = isFinancialOrQuantityColumn(table.getColumnName(column)), checkbox = isCheckboxColumn(table, column);
-            setOpaque(true); setBackground(NAVY); setForeground(Color.WHITE); setFont(new Font("SansSerif", Font.BOLD, 17)); setBorder(new CompoundBorder(new LineBorder(NAVY.darker(), 1), BorderFactory.createEmptyBorder(0, 12, 0, numeric ? 14 : 12))); setHorizontalAlignment(checkbox ? SwingConstants.CENTER : numeric ? SwingConstants.RIGHT : SwingConstants.LEFT); return this;
+            setOpaque(true); setBackground(NAVY); setForeground(Color.WHITE); setFont(new Font("SansSerif", Font.BOLD, 17)); setBorder(new CompoundBorder(new LineBorder(NAVY.darker(), 1), BorderFactory.createEmptyBorder(0, 12, 0, numeric ? 14 : 12))); setHorizontalAlignment(SwingConstants.CENTER); return this;
         }
     }
     private static final class DataRenderer extends DefaultTableCellRenderer {

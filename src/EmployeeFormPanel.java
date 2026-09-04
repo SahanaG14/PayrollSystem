@@ -188,7 +188,7 @@ public class EmployeeFormPanel extends JPanel {
             for(int day=1;day<=ym.lengthOfMonth();day++){
                 LocalDate value=ym.atDay(day); JButton button=new JButton(String.valueOf(day));
                 button.setMargin(new Insets(2,2,2,2));
-                button.setEnabled(!value.isBefore(minimum)&&!value.isAfter(maximum));if(value.equals(selected)){button.setBackground(new Color(26,46,64));button.setForeground(Color.WHITE);}
+                button.setEnabled(!value.isBefore(minimum)&&!value.isAfter(maximum));if(value.equals(selected)){button.setOpaque(true);button.setBackground(new Color(26,46,64));button.setForeground(Color.WHITE);button.setBorder(BorderFactory.createLineBorder(new Color(255,190,0),3));}
                 button.addActionListener(e->{selected=value;rebuildDays();});days.add(button);
             }
             while(days.getComponentCount()%7!=0)days.add(new JLabel());
