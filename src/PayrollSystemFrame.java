@@ -131,7 +131,7 @@ public class PayrollSystemFrame extends JFrame {
         return panel;
     }
 
-    private JButton navButton(String text) { JButton button = new RoundedNavButton(text); button.setIcon(moduleIconFor(text));button.setIconTextGap(10); button.putClientProperty("navButton", Boolean.TRUE); button.setMaximumSize(new Dimension(218, 48)); button.setPreferredSize(new Dimension(218, 48)); button.setAlignmentX(Component.CENTER_ALIGNMENT); button.setHorizontalAlignment(SwingConstants.LEFT); button.setFont(new Font("SansSerif", Font.BOLD, 15)); button.setForeground(Color.WHITE); button.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16)); button.setFocusPainted(false); button.setOpaque(false); button.setContentAreaFilled(false); button.setBorderPainted(false); return button; }
+    private JButton navButton(String text) { boolean longLabel="Cost to Company (CTC)".equals(text)||"Earnings & Allowances".equals(text); JButton button = new RoundedNavButton(text); button.setIcon(moduleIconFor(text));button.setIconTextGap(longLabel?4:10); button.putClientProperty("navButton", Boolean.TRUE); button.setMaximumSize(new Dimension(218, 48)); button.setPreferredSize(new Dimension(218, 48)); button.setAlignmentX(Component.CENTER_ALIGNMENT); button.setHorizontalAlignment(SwingConstants.LEFT); button.setFont(new Font("SansSerif", Font.BOLD, longLabel?13:15)); button.setForeground(Color.WHITE); button.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16)); button.setFocusPainted(false); button.setOpaque(false); button.setContentAreaFilled(false); button.setBorderPainted(false); return button; }
 
     private void toggleSidebar(){sidebarCollapsed=!sidebarCollapsed;updateSidebarLayout();}
     private void updateSidebarLayout(){int targetWidth=sidebarCollapsed?60:220;Dimension slotSize=new Dimension(targetWidth,45);sidebarToggle.setText(sidebarCollapsed?"":"MENU");sidebarToggle.setPreferredSize(slotSize);sidebarToggle.setMinimumSize(slotSize);sidebarToggle.setMaximumSize(slotSize);sidebarToggle.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);sidebarToggle.setToolTipText(sidebarCollapsed?"Expand sidebar":"Collapse sidebar");for(JButton button:menuButtons.values()){Dimension size=new Dimension(targetWidth,48);button.setPreferredSize(size);button.setMinimumSize(size);button.setMaximumSize(size);}updateSidebarIcons();int from=sidebar.getPreferredSize().width;new Timer(12,new java.awt.event.ActionListener(){int width=from;public void actionPerformed(java.awt.event.ActionEvent e){width+=Integer.compare(targetWidth,width)*Math.min(20,Math.abs(targetWidth-width));sidebar.setPreferredSize(new Dimension(width,0));sidebar.revalidate();sidebar.repaint();if(width==targetWidth)((Timer)e.getSource()).stop();}}).start();}
@@ -387,10 +387,14 @@ public class PayrollSystemFrame extends JFrame {
 
     private static final class RoundedNavButton extends JButton {
         RoundedNavButton(String text) { super(text); setOpaque(false); setContentAreaFilled(false); setRolloverEnabled(true); }
-        @Override protected void paintComponent(Graphics graphics) { Graphics2D g = (Graphics2D) graphics.create(); try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); boolean active = Boolean.TRUE.equals(getClientProperty("active")), hover = getModel().isRollover(); g.setColor(active ? SIDEBAR_SELECTED : hover ? new Color(36, 60, 84) : SIDEBAR_NORMAL); g.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24); if(active){g.setColor(Color.WHITE);g.fillRoundRect(0, 9, 5, Math.max(0,getHeight()-18), 5, 5);} } finally { g.dispose(); }
-            // BasicButtonUI paints the retained ImageIcon and text.  Omitting this call was the cause of blank collapsed buttons.
-            super.paintComponent(graphics);
-        }
+        @Override protected void paintComponent(Graphics graphics) { Graphics2D g = (Graphics2D) graphics.create(); try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            boolean active = Boolean.TRUE.equals(getClientProperty("active")), hover = getModel().isRollover(), pressed=getModel().isPressed();
+            g.setColor(active ? SIDEBAR_SELECTED : pressed ? new Color(25, 49, 73) : hover ? new Color(36, 60, 84) : SIDEBAR_NORMAL);g.fillRoundRect(0,0,getWidth(),getHeight(),24,24);
+            if(active){g.setColor(Color.WHITE);g.fillRoundRect(0,9,5,Math.max(0,getHeight()-18),5,5);}
+            Icon icon=getIcon();String text=getText()==null?"":getText();FontMetrics metrics=g.getFontMetrics(getFont());int iconWidth=icon==null?0:icon.getIconWidth(),iconHeight=icon==null?0:icon.getIconHeight();int iconX=text.isEmpty()?(getWidth()-iconWidth)/2:20,iconY=(getHeight()-iconHeight)/2;
+            if(icon!=null)icon.paintIcon(this,g,iconX,iconY);if(!text.isEmpty()){g.setFont(getFont());g.setColor(active?Color.WHITE:getForeground());g.drawString(text,iconX+iconWidth+getIconTextGap(),(getHeight()-metrics.getHeight())/2+metrics.getAscent());}
+        } finally { g.dispose(); } }
     }
 
     void returnToMasterData() {

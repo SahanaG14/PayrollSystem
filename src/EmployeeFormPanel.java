@@ -186,15 +186,21 @@ public class EmployeeFormPanel extends JPanel {
             days.removeAll(); int offset=displayed.getDayOfWeek().getValue()%7; YearMonth ym=YearMonth.from(displayed);
             for(int i=0;i<offset;i++)days.add(new JLabel());
             for(int day=1;day<=ym.lengthOfMonth();day++){
-                LocalDate value=ym.atDay(day); JButton button=new JButton(String.valueOf(day));
+                LocalDate value=ym.atDay(day); JButton button=value.equals(selected)?new SelectedDateButton(String.valueOf(day)):new JButton(String.valueOf(day));
                 button.setMargin(new Insets(2,2,2,2));
-                button.setEnabled(!value.isBefore(minimum)&&!value.isAfter(maximum));if(value.equals(selected)){button.setOpaque(true);button.setBackground(new Color(198,229,255));button.setForeground(Color.WHITE);button.setFocusPainted(false);button.setBorder(BorderFactory.createLineBorder(new Color(74,144,226),2));}
+                button.setEnabled(!value.isBefore(minimum)&&!value.isAfter(maximum));if(value.equals(selected)){button.setOpaque(true);button.setBackground(new Color(0x4F,0x81,0xB5));button.setForeground(Color.WHITE);button.setFocusPainted(false);button.setBorder(BorderFactory.createLineBorder(new Color(74,144,226),2));}
                 button.addActionListener(e->{selected=value;rebuildDays();});days.add(button);
             }
             while(days.getComponentCount()%7!=0)days.add(new JLabel());
             days.revalidate();days.repaint();
         }
         LocalDate selectedDate(){return selected;}
+        /** Final selected-date renderer; bypasses the global button UI's hover/focus repaint. */
+        private static final class SelectedDateButton extends JButton {
+            SelectedDateButton(String text){super(text);setForeground(Color.WHITE);setFocusPainted(false);setRolloverEnabled(true);}
+            @Override public void updateUI(){super.updateUI();setForeground(Color.WHITE);setFocusPainted(false);}
+            @Override protected void paintComponent(Graphics graphics){Graphics2D g=(Graphics2D)graphics.create();try{g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g.setColor(new Color(0x4F,0x81,0xB5));g.fillRect(0,0,getWidth(),getHeight());g.setColor(Color.WHITE);g.setFont(getFont());FontMetrics metrics=g.getFontMetrics();String text=getText();g.drawString(text,(getWidth()-metrics.stringWidth(text))/2,(getHeight()-metrics.getHeight())/2+metrics.getAscent());}finally{g.dispose();}}
+        }
     }
     private JComponent fieldWithButton(JTextField value,JComponent button){JPanel row=new JPanel(new BorderLayout(8,0));row.setOpaque(false);row.add(value,BorderLayout.CENTER);row.add(button,BorderLayout.EAST);return row;}
     private JComponent fieldWithButtons(JTextField value,JButton upload,JButton remove){JPanel buttons=new JPanel(new FlowLayout(FlowLayout.RIGHT,4,0));buttons.setOpaque(false);buttons.add(upload);buttons.add(remove);JPanel row=new JPanel(new BorderLayout(6,0));row.setOpaque(false);row.add(value,BorderLayout.CENTER);row.add(buttons,BorderLayout.EAST);return row;}
