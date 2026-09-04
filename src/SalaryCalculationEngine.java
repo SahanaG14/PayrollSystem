@@ -24,6 +24,9 @@ public final class SalaryCalculationEngine {
         double allowances = Money.round(hra + bonus + conveyance + performance + medical + special + fixed);
         double gross = Money.round(basic + allowances + other);
         DeductionStore.Value deductions = DeductionStore.get(employee.getId(), period.toString());
+        if (!DeductionStore.hasSaved(employee.getId(), period.toString())) {
+            deductions = CtcDeductionCalculator.forMonth(employee, period, ratio);
+        }
         PayrollCalculator.Result result = new PayrollCalculator.Result();
         result.earnings.put("Monthly Basic Pay", basic);
         result.earnings.put("Total Allowances", allowances);

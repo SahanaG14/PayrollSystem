@@ -10,7 +10,7 @@
   <build>
     <!-- This project intentionally keeps Java sources in /src, not Maven's default /src/main/java. -->
     <sourceDirectory>src</sourceDirectory>
-    <resources><resource><directory>assets</directory><includes><include>yasl-logo.png</include><include>yasl-app-icon.png</include></includes></resource></resources>
+    <resources><resource><directory>assets</directory><includes><include>yasl-logo.png</include><include>yasl-app-icon.png</include><include>icons/*.png</include></includes></resource></resources>
     <plugins>
       <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version><configuration><release>17</release></configuration></plugin>
     </plugins>

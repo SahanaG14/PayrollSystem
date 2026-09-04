@@ -9,7 +9,8 @@ public final class LicenseActivationFrame extends JFrame {
     public LicenseActivationFrame() {
         super(Branding.APPLICATION_NAME + " - License Activation");
         Branding.applyWindowIcon(this);
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter(){@Override public void windowClosing(java.awt.event.WindowEvent event){if(CloseConfirmation.confirm(LicenseActivationFrame.this))dispose();}});
 
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 32, 20, 32));

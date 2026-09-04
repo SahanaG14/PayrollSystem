@@ -12,7 +12,7 @@ public class PayslipTemplatePanel extends JPanel {
         AttendanceRecord attendance=new AttendanceDAO().load(employee.getId(),period.toString());
         double working=new AttendanceDAO().workingDays(period.toString()); AttendanceSettings rules=new AttendanceSettingsDAO().load();
         double payable=LeaveBalanceService.payableDays(employee,period,working,attendance.absentDays,attendance.paidLeaveDays,attendance.unpaidLeaveDays,rules);
-        CTCStore.Value allowance=CTCStore.get(employee.getId()), other=CTCStore.getOther(employee.getId(),period.toString());double attendanceBonus=working>0&&payable==working?allowance.attendance:0,totalAllowance=allowance.allowances()-allowance.attendance+attendanceBonus;
+        CTCStore.Value allowance=CTCStore.get(employee.getId()), other=CTCStore.getOther(employee.getId(),period.toString());double performancePay=EarningsAndAllowancesPanel.displayedValues(employee,period)[3];double attendanceBonus=working>0&&payable==working?allowance.attendance:0,totalAllowance=allowance.allowances()-allowance.attendance+attendanceBonus;
         DeductionStore.Value deduction=DeductionStore.get(employee.getId(), period.toString());
 
         companyHeader(0); companyAddress(1);
@@ -30,7 +30,7 @@ public class PayslipTemplatePanel extends JPanel {
         earningsDeduction(13,"Allowances","","Labour Welfare Fund",money(0));
         earningsDeduction(14,"House Rent Allowance",money(allowance.hra),"ESIC",money(deduction.esic));
         earningsDeduction(15,employee.isWagesStructure()?"Attendance Bonus":"",employee.isWagesStructure()?money(attendanceBonus):"","EPF",money(deduction.epf));
-        earningsDeduction(16,"Performance Pay",money(allowance.performance),"Advance",money(deduction.advance));
+        earningsDeduction(16,"Performance Pay",money(performancePay),"Advance",money(deduction.advance));
         earningsDeduction(17,"Special Allowance",money(allowance.special),"Total Deductions",money(deduction.total()));
         earningsDeduction(18,"Total Allowance",money(totalAllowance),"Additional Perks / Bonus",money(0));
         earningsDeduction(19,employee.isWagesStructure()?"OT Pay":"",employee.isWagesStructure()?money(other.otPay):"","", "");

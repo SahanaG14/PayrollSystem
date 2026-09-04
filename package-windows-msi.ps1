@@ -22,6 +22,7 @@ $sources=Get-ChildItem (Join-Path $root 'src') -Filter '*.java' | ForEach-Object
 $seed=Join-Path $classes 'empty-payroll.db';& $java "-Dpayroll.db.path=$seed" -cp "$classes;$root\lib\*" SchemaSeedBuilder;if($LASTEXITCODE -ne 0){throw 'Schema seed creation failed.'}
 Copy-Item (Join-Path $root 'assets\yasl-logo.png') (Join-Path $classes 'yasl-logo.png')
 Copy-Item (Join-Path $root 'assets\yasl-app-icon.png') (Join-Path $classes 'yasl-app-icon.png')
+Copy-Item (Join-Path $root 'assets\icons') (Join-Path $classes 'icons') -Recurse
 # Ship the normal entry point: it shows activation before database initialization and login.
 & $jar --create --file (Join-Path $input 'PayrollSystem.jar') --main-class Main -C $classes .;if($LASTEXITCODE -ne 0){throw 'JAR creation failed.'}
 Copy-Item (Join-Path $root 'lib\*') (Join-Path $input 'lib')

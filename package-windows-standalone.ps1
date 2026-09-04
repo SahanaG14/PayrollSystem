@@ -11,6 +11,7 @@ $sources=Get-ChildItem (Join-Path $root 'src') -Filter '*.java' | ForEach-Object
 if($LASTEXITCODE -ne 0){throw 'Compilation failed.'}
 Copy-Item (Join-Path $root 'assets\yasl-logo.png') (Join-Path $classes 'yasl-logo.png')
 Copy-Item (Join-Path $root 'assets\yasl-app-icon.png') (Join-Path $classes 'yasl-app-icon.png')
+Copy-Item (Join-Path $root 'assets\icons') (Join-Path $classes 'icons') -Recurse
 # Do not distribute the online licensing gate or activation client in this offline package.
 Remove-Item -Force (Join-Path $classes 'Main.class'),(Join-Path $classes 'LicenseService.class'),(Join-Path $classes 'LicenseService$Result.class'),(Join-Path $classes 'LicenseActivationFrame.class') -ErrorAction SilentlyContinue
 Copy-Item $classes (Join-Path $stage 'classes') -Recurse

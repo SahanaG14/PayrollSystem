@@ -11,6 +11,7 @@ public final class EarningsAndAllowancesPanel extends JPanel {
     private final JTabbedPane months = new JTabbedPane();
     private final JPanel current = new JPanel(new BorderLayout());
     private int financialYear = FinancialYear.currentStart();
+    private long loadGeneration;
 
     public EarningsAndAllowancesPanel() {
         super(new BorderLayout());
@@ -32,14 +33,15 @@ public final class EarningsAndAllowancesPanel extends JPanel {
 
     private YearMonth period() { return FinancialYear.month(financialYear, Math.max(0, months.getSelectedIndex())); }
     private void styleMonthLabels() { for (int i = 0; i < months.getTabCount(); i++) if (months.getTabComponentAt(i) instanceof JLabel tab) tab.setForeground(Color.WHITE); }
-    private void loadView() { if (months.getSelectedIndex() < 0) return; current.removeAll(); current.add(grid(period()), BorderLayout.CENTER); current.revalidate(); current.repaint(); }
+    private void loadView() { if (months.getSelectedIndex() < 0) return; YearMonth requested=period(); long generation=++loadGeneration; current.removeAll(); current.add(new JLabel("Loading earnings and allowances…",SwingConstants.CENTER),BorderLayout.CENTER); current.revalidate(); current.repaint(); ApplicationTasks.execute(()->{java.util.List<Employee> list=employees.listForMonth("",requested);Object[][] rows=rows(list,requested);SwingUtilities.invokeLater(()->{if(generation!=loadGeneration||!requested.equals(period()))return;current.removeAll();current.add(grid(requested,list,rows),BorderLayout.CENTER);current.revalidate();current.repaint();});}); }
 
-    private JComponent grid(YearMonth period) {
-        java.util.List<Employee> list = employees.listForMonth("", period); Object[][] rows = new Object[list.size()][COLUMNS.length];
+    private Object[][] rows(java.util.List<Employee> list,YearMonth period){Object[][] rows=new Object[list.size()][COLUMNS.length];
         for (int r = 0; r < list.size(); r++) {
             Employee e = list.get(r); double[] values = displayedValues(e, period);
             rows[r] = new Object[]{e.getId(), e.getName(), values[0], values[1], values[2], values[3], values[4], values[5], values[6], Money.round(sum(values, 0, 6)), values[7], values[8], Money.round(values[7] + values[8])};
         }
+        return rows;}
+    private JComponent grid(YearMonth period,java.util.List<Employee> list,Object[][] rows) {
         final boolean[] editing = {false}, restoring = {false}; final Object[][][] snapshot = {copyRows(rows)};
         DefaultTableModel model = new DefaultTableModel(rows, COLUMNS) { public boolean isCellEditable(int row, int column) { if (!editing[0] || column < 2 || column == 9 || column == 12) return false; Employee employee = list.get(row); return employee.isWagesStructure() || (column != 3 && column != 10 && column != 11); } };
         JTable table = new JTable(model); table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF); ExcelTableSupport.enableNumericMultiFill(table, false);

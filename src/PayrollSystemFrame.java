@@ -39,11 +39,12 @@ public class PayrollSystemFrame extends JFrame {
     private boolean switching;
     private String activeCard = "Employee";
     private final Set<String> staleModules = new HashSet<>();
+    private final Set<String> styledModules = new HashSet<>();
 
     public PayrollSystemFrame() {
         super(Branding.APPLICATION_NAME);
         Branding.applyWindowIcon(this);
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(1280, 720));
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(null);
@@ -75,6 +76,7 @@ public class PayrollSystemFrame extends JFrame {
     private void installShutdownHandler() {
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent event) {
+                if (!CloseConfirmation.confirm(PayrollSystemFrame.this)) return;
                 Main.applicationClosing();
                 stopActiveEditing(content);
                 for (Window window : Window.getWindows()) {
@@ -82,6 +84,7 @@ public class PayrollSystemFrame extends JFrame {
                 }
                 ApplicationTasks.shutdown();
                 BackupScheduler.shutdown();
+                dispose();
             }
         });
     }
@@ -109,7 +112,7 @@ public class PayrollSystemFrame extends JFrame {
         panel.setBackground(new Color(22, 35, 55));
         panel.setDoubleBuffered(true);
 
-        sidebarToggle=new JButton("\u2630  MENU");sidebarToggle.setFont(new Font("SansSerif",Font.BOLD,20));sidebarToggle.setForeground(Color.WHITE);sidebarToggle.setOpaque(false);sidebarToggle.setContentAreaFilled(false);sidebarToggle.setBorderPainted(false);sidebarToggle.setFocusPainted(false);sidebarToggle.setToolTipText("Collapse sidebar");sidebarToggle.setMaximumSize(new Dimension(220,45));sidebarToggle.setPreferredSize(new Dimension(220,45));sidebarToggle.setMinimumSize(new Dimension(220,45));sidebarToggle.setAlignmentX(Component.CENTER_ALIGNMENT);sidebarToggle.setHorizontalAlignment(SwingConstants.LEFT);sidebarToggle.setBorder(BorderFactory.createEmptyBorder(0,20,0,16));sidebarToggle.addActionListener(e->toggleSidebar());panel.add(sidebarToggle);
+        sidebarToggle=new JButton("MENU",Branding.moduleIcon("menu",20,20));sidebarToggle.setFont(new Font("SansSerif",Font.BOLD,20));sidebarToggle.setForeground(Color.WHITE);sidebarToggle.setOpaque(false);sidebarToggle.setContentAreaFilled(false);sidebarToggle.setBorderPainted(false);sidebarToggle.setFocusPainted(false);sidebarToggle.setToolTipText("Collapse sidebar");sidebarToggle.setMaximumSize(new Dimension(220,45));sidebarToggle.setPreferredSize(new Dimension(220,45));sidebarToggle.setMinimumSize(new Dimension(220,45));sidebarToggle.setAlignmentX(Component.CENTER_ALIGNMENT);sidebarToggle.setHorizontalAlignment(SwingConstants.LEFT);sidebarToggle.setBorder(BorderFactory.createEmptyBorder(0,20,0,16));sidebarToggle.addActionListener(e->toggleSidebar());panel.add(sidebarToggle);
 
         for (String name : new String[]{"Dashboard", "Master Data", "Employee", "Attendance", "Cost to Company (CTC)", "Earnings & Allowances", "Deductions", "Salary", "Payslip", "Reports"}) {
             JButton button = navButton(name);
@@ -125,12 +128,12 @@ public class PayrollSystemFrame extends JFrame {
         return panel;
     }
 
-    private JButton navButton(String text) { JButton button = new RoundedNavButton(text); button.putClientProperty("navButton", Boolean.TRUE); button.setMaximumSize(new Dimension(218, 48)); button.setPreferredSize(new Dimension(218, 48)); button.setAlignmentX(Component.CENTER_ALIGNMENT); button.setHorizontalAlignment(SwingConstants.LEFT); button.setFont(new Font("SansSerif", Font.BOLD, 15)); button.setForeground(Color.WHITE); button.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16)); button.setFocusPainted(false); button.setOpaque(false); button.setContentAreaFilled(false); button.setBorderPainted(false); return button; }
+    private JButton navButton(String text) { JButton button = new RoundedNavButton(text); button.setIcon(moduleIconFor(text));button.setIconTextGap(10); button.putClientProperty("navButton", Boolean.TRUE); button.setMaximumSize(new Dimension(218, 48)); button.setPreferredSize(new Dimension(218, 48)); button.setAlignmentX(Component.CENTER_ALIGNMENT); button.setHorizontalAlignment(SwingConstants.LEFT); button.setFont(new Font("SansSerif", Font.BOLD, 15)); button.setForeground(Color.WHITE); button.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16)); button.setFocusPainted(false); button.setOpaque(false); button.setContentAreaFilled(false); button.setBorderPainted(false); return button; }
 
     private void toggleSidebar(){sidebarCollapsed=!sidebarCollapsed;updateSidebarLayout();}
-    private void updateSidebarLayout(){int targetWidth=sidebarCollapsed?60:220;Dimension slotSize=new Dimension(targetWidth,45);sidebarToggle.setText(sidebarCollapsed?"\u2630":"\u2630  MENU");sidebarToggle.setPreferredSize(slotSize);sidebarToggle.setMinimumSize(slotSize);sidebarToggle.setMaximumSize(slotSize);sidebarToggle.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);sidebarToggle.setToolTipText(sidebarCollapsed?"Expand sidebar":"Collapse sidebar");for(JButton button:menuButtons.values()){Dimension size=new Dimension(targetWidth,48);button.setPreferredSize(size);button.setMinimumSize(size);button.setMaximumSize(size);}updateSidebarIcons();int from=sidebar.getPreferredSize().width;new Timer(12,new java.awt.event.ActionListener(){int width=from;public void actionPerformed(java.awt.event.ActionEvent e){width+=Integer.compare(targetWidth,width)*Math.min(20,Math.abs(targetWidth-width));sidebar.setPreferredSize(new Dimension(width,0));sidebar.revalidate();sidebar.repaint();if(width==targetWidth)((Timer)e.getSource()).stop();}}).start();}
-    private void updateSidebarIcons(){for(Map.Entry<String,JButton> entry:menuButtons.entrySet()){JButton button=entry.getValue();if(button.getClientProperty("menuText")==null)button.putClientProperty("menuText",button.getText());String text=String.valueOf(button.getClientProperty("menuText"));button.setText(sidebarCollapsed?sidebarIcon(entry.getKey()):text);button.setToolTipText(sidebarCollapsed?text:null);button.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);}}
-    private String sidebarIcon(String name){return switch(name){case "Dashboard"->"\uD83D\uDCCA";case "Master Data"->"\uD83D\uDCC2";case "Employee"->"\uD83D\uDC65";case "Attendance"->"\uD83D\uDCC5";case "Cost to Company (CTC)"->"\uD83D\uDCB0";case "Earnings & Allowances"->"\uD83D\uDCC8";case "Deductions"->"\uD83D\uDCC9";case "Salary"->"\uD83D\uDCBB";case "Payslip"->"\uD83D\uDCC4";case "Reports"->"\uD83D\uDCCA";case "Settings"->"\u2699";case "Backup & Restore"->"\uD83D\uDCBE";case "Help"->"\u2753";case "Logout"->"\u279C";default->"";};}
+    private void updateSidebarLayout(){int targetWidth=sidebarCollapsed?60:220;Dimension slotSize=new Dimension(targetWidth,45);sidebarToggle.setText(sidebarCollapsed?"":"MENU");sidebarToggle.setPreferredSize(slotSize);sidebarToggle.setMinimumSize(slotSize);sidebarToggle.setMaximumSize(slotSize);sidebarToggle.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);sidebarToggle.setToolTipText(sidebarCollapsed?"Expand sidebar":"Collapse sidebar");for(JButton button:menuButtons.values()){Dimension size=new Dimension(targetWidth,48);button.setPreferredSize(size);button.setMinimumSize(size);button.setMaximumSize(size);}updateSidebarIcons();int from=sidebar.getPreferredSize().width;new Timer(12,new java.awt.event.ActionListener(){int width=from;public void actionPerformed(java.awt.event.ActionEvent e){width+=Integer.compare(targetWidth,width)*Math.min(20,Math.abs(targetWidth-width));sidebar.setPreferredSize(new Dimension(width,0));sidebar.revalidate();sidebar.repaint();if(width==targetWidth)((Timer)e.getSource()).stop();}}).start();}
+    private void updateSidebarIcons(){for(Map.Entry<String,JButton> entry:menuButtons.entrySet()){JButton button=entry.getValue();if(button.getClientProperty("menuText")==null)button.putClientProperty("menuText",button.getText());String text=String.valueOf(button.getClientProperty("menuText"));button.setIcon(moduleIconFor(entry.getKey()));button.setText(sidebarCollapsed?"":text);button.setToolTipText(sidebarCollapsed?text:null);button.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);}}
+    private ImageIcon moduleIconFor(String name){String resource=switch(name){case "Dashboard"->"dashboard";case "Master Data"->"master-data";case "Employee"->"employee";case "Attendance"->"attendance";case "Cost to Company (CTC)"->"ctc";case "Earnings & Allowances"->"earnings";case "Deductions"->"deductions";case "Salary"->"salary";case "Payslip"->"payslip";case "Reports"->"reports";case "Settings"->"settings";case "Backup & Restore"->"backup";case "Help"->"help";case "Logout"->"logout";default->"menu";};return Branding.moduleIcon(resource,20,20);}
 
     private void logout(){if(JOptionPane.showConfirmDialog(this,"Are you sure you want to Logout?","Logout",JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE)!=JOptionPane.YES_OPTION)return;String username=Session.currentUser;AuditLogDAO.logActivity(username,"USER_LOGOUT","User logged out of system",new java.sql.Timestamp(System.currentTimeMillis()));Session.logout();dispose();SwingUtilities.invokeLater(()->new LoginFrame().setVisible(true));}
 
@@ -140,8 +143,7 @@ public class PayrollSystemFrame extends JFrame {
         moduleTitle = new JLabel("Employee");
         moduleTitle.setFont(new Font("SansSerif", Font.BOLD, 22));
         panel.add(moduleTitle, BorderLayout.WEST);
-        JButton refresh = new JButton("↻");
-        refresh.setFont(new Font("SansSerif", Font.BOLD, 24));
+        JButton refresh = new JButton(Branding.moduleIcon("refresh",20,20));
         refresh.setToolTipText("Refresh current module");
         refresh.setFocusPainted(false);
         refresh.setMargin(new Insets(1, 8, 3, 8));
@@ -300,10 +302,10 @@ public class PayrollSystemFrame extends JFrame {
         try {
             stopActiveEditing(content);
             ensureModule(name);
-            if (staleModules.contains(name) && !hasUnsavedEdits(content)) { refreshModule(name); staleModules.remove(name); }
-            TabStyle.apply(content);
+            if (staleModules.contains(name) && !hasUnsavedEdits(content)) { styledModules.remove(name); refreshModule(name); staleModules.remove(name); }
             cards.show(content, name);
             activeCard = name;
+            if (styledModules.add(name)) TabStyle.apply(visibleModule());
             selectMenu(name);
             content.revalidate();
             content.repaint();
@@ -317,6 +319,7 @@ public class PayrollSystemFrame extends JFrame {
 
     private void refreshModule(String name) {
         if (!isDisplayable()) return;
+        styledModules.remove(name);
         try {
             if ("Payslip".equals(name) && payroll != null) payroll.refreshEmployees();
             else if ("Attendance".equals(name) && attendance != null) attendance.refreshEmployees();
@@ -387,7 +390,10 @@ public class PayrollSystemFrame extends JFrame {
 
     private static final class RoundedNavButton extends JButton {
         RoundedNavButton(String text) { super(text); setOpaque(false); setContentAreaFilled(false); setRolloverEnabled(true); }
-        @Override protected void paintComponent(Graphics graphics) { Graphics2D g = (Graphics2D) graphics.create(); try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); boolean active = Boolean.TRUE.equals(getClientProperty("active")), hover = getModel().isRollover(); g.setColor(active ? new Color(71, 85, 105) : hover ? new Color(36, 60, 84) : new Color(30, 41, 59)); g.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24); if(active){g.setColor(new Color(203, 213, 225));g.fillRoundRect(0, 9, 5, Math.max(0,getHeight()-18), 5, 5);} g.setColor(Color.WHITE);g.setFont(getFont());FontMetrics metrics=g.getFontMetrics();g.drawString(getText(),20,(getHeight()-metrics.getHeight())/2+metrics.getAscent()); } finally { g.dispose(); } }
+        @Override protected void paintComponent(Graphics graphics) { Graphics2D g = (Graphics2D) graphics.create(); try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); boolean active = Boolean.TRUE.equals(getClientProperty("active")), hover = getModel().isRollover(); g.setColor(active ? new Color(71, 85, 105) : hover ? new Color(36, 60, 84) : new Color(30, 41, 59)); g.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24); if(active){g.setColor(new Color(203, 213, 225));g.fillRoundRect(0, 9, 5, Math.max(0,getHeight()-18), 5, 5);} } finally { g.dispose(); }
+            // BasicButtonUI paints the retained ImageIcon and text.  Omitting this call was the cause of blank collapsed buttons.
+            super.paintComponent(graphics);
+        }
     }
 
     void returnToMasterData() {

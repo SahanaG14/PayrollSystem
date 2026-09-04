@@ -49,6 +49,7 @@ public final class DatabaseInitializer {
         };
         for(String ddl:schema)statement.executeUpdate(ddl);
         for(String table:new String[]{"employee_master_data","attendance","ctc","earnings_allowances","deductions","salary","payslip","it_computation","settings_company_details","settings_allowance_defaults","settings_ot_earnings","settings_attendance_leave_rules","settings_deduction_rules","settings_tax_slabs","settings_revised_salary","settings_passwords"}){try{statement.executeUpdate("ALTER TABLE "+table+" ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");}catch(Exception ignored){}try{statement.executeUpdate("ALTER TABLE "+table+" ADD COLUMN deleted_at TEXT");}catch(Exception ignored){}}
+        for(String index:new String[]{"CREATE INDEX IF NOT EXISTS idx_employee_active ON employee_master_data(is_deleted,status,employee_id)","CREATE INDEX IF NOT EXISTS idx_attendance_period ON attendance(month,fy,is_deleted,employee_id)","CREATE INDEX IF NOT EXISTS idx_salary_period ON salary(month,fy,is_deleted,employee_id)","CREATE INDEX IF NOT EXISTS idx_deductions_period ON deductions(month,fy,is_deleted,employee_id)","CREATE INDEX IF NOT EXISTS idx_earnings_period ON earnings_allowances(month,fy,is_deleted,employee_id)"})try{statement.executeUpdate(index);}catch(Exception ignored){}
     }catch(Exception ignored){}}
     private DatabaseInitializer() { }
 }

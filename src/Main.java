@@ -40,7 +40,7 @@ public class Main {
             catch (Exception ignored) { }
             UIManager.put("Button.background", new Color(26, 46, 64));
             UIManager.put("Button.foreground", Color.WHITE);
-            UIManager.put("Button.font", new Font("Segoe UI", Font.BOLD, 12));
+            UIManager.put("Button.font", new Font("Dialog", Font.BOLD, 12));
             UIManager.put("Button.opaque", Boolean.TRUE);
             UIManager.put("Button.darcula.background", new Color(26, 46, 64));
             UIManager.put("Button.focusedBackground", new Color(36, 60, 84));
@@ -49,7 +49,7 @@ public class Main {
             UIManager.put("TabbedPaneUI", "NavyTabbedPaneUI");
             UIStyleUtility.installGlobalButtonDefaults();
             UIManager.put("Label.font", new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 18));
-            UIManager.put("Button.font", new Font("Segoe UI", Font.BOLD, 12));
+            UIManager.put("Button.font", new Font("Dialog", Font.BOLD, 12));
             UIManager.put("TextField.font", new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 18));
             UIManager.put("ComboBox.font", new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 18));
             UIManager.put("TabbedPane.font", new java.awt.Font("SansSerif", java.awt.Font.BOLD, 18));
