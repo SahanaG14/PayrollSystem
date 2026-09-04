@@ -90,7 +90,7 @@ public class PayrollSystemFrame extends JFrame {
         JTabbedPane settings = new JTabbedPane();
         settings.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         settings.setFont(new Font("SansSerif", Font.BOLD, 14));
-        ChangePasswordPanel passwordSettings = new ChangePasswordPanel();
+        ChangePasswordPanel passwordSettings = new ChangePasswordPanel(this::openCredentialRecovery);
         settings.addTab("Company Details", new SettingsEditGuard(new CompanyDetailsPanel()));
         settings.addTab("Allowance Defaults", new SettingsEditGuard(new AllowanceSettingsPanel()));
         settings.addTab("OT & Other Earnings", new SettingsEditGuard(new OtherEarningsSettingsPanel()));
@@ -203,6 +203,11 @@ public class PayrollSystemFrame extends JFrame {
             deductions = null;
             JOptionPane.showMessageDialog(this, "Unable to open Deductions: " + exception.getMessage(), "Deductions", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void openCredentialRecovery() {
+        showCard("Help");
+        help.showCredentialRecovery();
     }
 
     private JComponent employeeView() {
@@ -346,10 +351,16 @@ public class PayrollSystemFrame extends JFrame {
         } else if ("Reports".equals(name) && reports == null) {
             reports = new ReportsPanel(); content.add(reports, "Reports");
         } else if ("Help".equals(name) && help == null) {
-            help = new HelpPanel(); content.add(help, "Help");
+            help = new HelpPanel(this::logoutAfterCredentialRecovery); content.add(help, "Help");
         } else if ("Backup & Restore".equals(name) && backupRestore == null) {
             backupRestore = new BackupRestorePanel(); content.add(backupRestore, "Backup & Restore");
         }
+    }
+
+    private void logoutAfterCredentialRecovery() {
+        Session.logout();
+        dispose();
+        SwingUtilities.invokeLater(Main::openLogin);
     }
 
     private void selectMenu(String card) {
