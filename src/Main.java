@@ -22,7 +22,9 @@ public class Main {
         }
         startApplication();
     }
-    static void startApplication() {
+    static void startApplication() { startApplication(false); }
+    /** A newly accepted licence always requires the account-creation step before Login. */
+    static void startApplication(boolean requireAccountCreation) {
         stopLicenseMonitoring();
         LICENSE_LOCKOUT.set(false);
         DatabaseInitializer.initialize();
@@ -53,7 +55,7 @@ public class Main {
             UIManager.put("TabbedPane.font", new java.awt.Font("SansSerif", java.awt.Font.BOLD, 18));
             UIManager.put("Table.font", new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 18));
             UIManager.put("TableHeader.font", new java.awt.Font("SansSerif", java.awt.Font.BOLD, 18));
-            if(UserAuthentication.hasUsers())openLogin();else new InitialAdminSetupFrame().setVisible(true);
+            if(requireAccountCreation||!UserAuthentication.hasUsers())new InitialAdminSetupFrame(requireAccountCreation).setVisible(true);else openLogin();
         });
     }
     static void openLogin() { new LoginFrame().setVisible(true); }

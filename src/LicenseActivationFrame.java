@@ -62,6 +62,6 @@ public final class LicenseActivationFrame extends JFrame {
             return;
         }
         dispose();
-        Main.startApplication();
+        Main.startApplication(true);
     }
 }
