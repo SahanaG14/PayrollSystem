@@ -17,7 +17,7 @@ public final class DatabaseViewerPanel extends JPanel {
         super(new BorderLayout(10, 10));
         setBorder(UIStyleUtility.compactModuleBorder());
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JButton unlock = new JButton("Unlock Read-only Viewer");
+        JButton unlock = new JButton("Open SQLite Database (Read-only)");
         unlock.addActionListener(e -> unlock());
         tables.setEnabled(false);
         tables.addActionListener(e -> loadSelectedTable());

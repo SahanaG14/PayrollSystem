@@ -98,7 +98,6 @@ public class PayrollSystemFrame extends JFrame {
         settings.addTab("Deduction Rules", new SettingsEditGuard(new DeductionSettingsPanel()));
         settings.addTab("Revised Salary Settings", new SettingsEditGuard(new RevisedSalarySettingsPanel()));
         settings.addTab("Password management", new SettingsEditGuard(passwordSettings));
-        settings.addTab("Database Viewer", new DatabaseViewerPanel());
         settings.addChangeListener(event -> passwordSettings.refresh());
         return settings;
     }
