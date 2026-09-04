@@ -1,0 +1,17 @@
+import java.io.File;
+import java.nio.file.*;
+import java.sql.*;
+import java.time.*;
+
+/** Versioned, transactional local schema upgrades. A copy is retained before each upgrade. */
+public final class DatabaseMigrations {
+    public static void apply(){synchronized(DBConnection.databaseLock()){try(Connection c=DBConnection.getConnection()){if(c==null)return;ensureVersionTable(c);if(version(c)>=1)return;backup();c.setAutoCommit(false);try{encryptExistingEmployeePii(c);try(PreparedStatement p=c.prepareStatement("INSERT INTO schema_migrations(version,applied_at) VALUES(1,CURRENT_TIMESTAMP)")){p.executeUpdate();}c.commit();}catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}}catch(Exception e){System.err.println("Database migration failed; existing data was preserved: "+e.getMessage());}}}
+    private static void ensureVersionTable(Connection c)throws SQLException{try(Statement s=c.createStatement()){s.executeUpdate("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)");}}
+    private static int version(Connection c)throws SQLException{try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT COALESCE(MAX(version),0) FROM schema_migrations")){return r.next()?r.getInt(1):0;}}
+    private static void encryptExistingEmployeePii(Connection c)throws Exception{if(!tableExists(c,"employee_master_data"))return;try(Statement s=c.createStatement()){addColumn(s,"phone_ciphertext TEXT");addColumn(s,"pan_ciphertext TEXT");addColumn(s,"aadhaar_ciphertext TEXT");}try(Statement s=c.createStatement();ResultSet rows=s.executeQuery("SELECT employee_id,phone,pan,aadhaar,phone_ciphertext,pan_ciphertext,aadhaar_ciphertext FROM employee_master_data")){while(rows.next()){String phone=rows.getString(5),pan=rows.getString(6),aadhaar=rows.getString(7);if(phone==null||phone.isBlank())phone=protect(rows.getString(2));if(pan==null||pan.isBlank())pan=protect(rows.getString(3));if(aadhaar==null||aadhaar.isBlank())aadhaar=protect(rows.getString(4));try(PreparedStatement update=c.prepareStatement("UPDATE employee_master_data SET phone_ciphertext=?,pan_ciphertext=?,aadhaar_ciphertext=?,phone=?,pan=?,aadhaar=? WHERE employee_id=?")){update.setString(1,phone);update.setString(2,pan);update.setString(3,aadhaar);update.setString(4,phone==null||phone.isBlank()?"":"0000000000");update.setString(5,pan==null||pan.isBlank()?"":"XXXXXXXXXX");update.setString(6,aadhaar==null||aadhaar.isBlank()?"":"000000000000");update.setString(7,rows.getString(1));update.executeUpdate();}}}}
+    private static void addColumn(Statement s,String definition){try{s.executeUpdate("ALTER TABLE employee_master_data ADD COLUMN "+definition);}catch(SQLException ignored){}}
+    private static String protect(String value){if(value==null||value.isBlank())return value;String plain=SecurityUtil.decrypt(value);return plain.equals(value)?SecurityUtil.encrypt(value):value;}
+    private static boolean tableExists(Connection c,String name)throws SQLException{try(PreparedStatement p=c.prepareStatement("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")){p.setString(1,name);return p.executeQuery().next();}}
+    private static void backup()throws Exception{File file=DBConnection.databaseFile();if(!file.isFile())return;Path folder=file.toPath().getParent().resolve("migration-backups");Files.createDirectories(folder);Files.copy(file.toPath(),folder.resolve("payroll-before-schema-v1-"+System.currentTimeMillis()+".db"),StandardCopyOption.COPY_ATTRIBUTES);}
+    private DatabaseMigrations(){}
+}

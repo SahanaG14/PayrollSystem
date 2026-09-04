@@ -7,4 +7,27 @@
     <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><version>2.0.13</version></dependency>
     <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-nop</artifactId><version>2.0.13</version><scope>runtime</scope></dependency>
   </dependencies>
+  <build>
+    <!-- This project intentionally keeps Java sources in /src, not Maven's default /src/main/java. -->
+    <sourceDirectory>src</sourceDirectory>
+    <resources><resource><directory>assets</directory><includes><include>yasl-logo.png</include><include>yasl-app-icon.png</include></includes></resource></resources>
+    <plugins>
+      <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version><configuration><release>17</release></configuration></plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>standalone-package</id>
+      <build><finalName>payroll-system-standalone</finalName><plugins><plugin>
+        <artifactId>maven-shade-plugin</artifactId><version>3.5.3</version>
+        <executions><execution><phase>package</phase><goals><goal>shade</goal></goals><configuration>
+          <createDependencyReducedPom>false</createDependencyReducedPom><shadedArtifactAttached>false</shadedArtifactAttached>
+          <filters><filter><artifact>*:*</artifact><excludes>
+            <exclude>Main.class</exclude><exclude>LicenseService.class</exclude><exclude>LicenseService$Result.class</exclude><exclude>LicenseActivationFrame.class</exclude>
+          </excludes></filter></filters>
+          <transformers><transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"><mainClass>StandaloneMain</mainClass></transformer></transformers>
+        </configuration></execution></executions>
+      </plugin></plugins></build>
+    </profile>
+  </profiles>
 </project>

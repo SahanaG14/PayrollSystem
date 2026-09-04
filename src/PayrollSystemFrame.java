@@ -4,6 +4,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,7 +41,8 @@ public class PayrollSystemFrame extends JFrame {
     private final Set<String> staleModules = new HashSet<>();
 
     public PayrollSystemFrame() {
-        super("Payroll System");
+        super(Branding.APPLICATION_NAME);
+        Branding.applyWindowIcon(this);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1280, 720));
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -48,6 +50,10 @@ public class PayrollSystemFrame extends JFrame {
         setLayout(new BorderLayout());
         RepaintManager.currentManager(this).setDoubleBufferingEnabled(true);
         installShutdownHandler();
+        addWindowFocusListener(new WindowFocusListener() {
+            @Override public void windowGainedFocus(WindowEvent event) { Main.revalidateLicenseWhenFocused(); }
+            @Override public void windowLostFocus(WindowEvent event) { }
+        });
         BackupScheduler.start();
         PayrollEvents.onAttendanceSaved(() -> {
             if (ctc != null) ctc.refresh();
@@ -62,13 +68,14 @@ public class PayrollSystemFrame extends JFrame {
 
         content.add(employeeView(), "Employee");
         content.add(settingsView(), "Settings");
-        ActivityLogger.log("Security", "APPLICATION START", "Payroll System started", "LOGIN");
+        ActivityLogger.log("Security", "APPLICATION START", Branding.COMPANY_NAME+" started", "LOGIN");
         showCard("Dashboard");
     }
 
     private void installShutdownHandler() {
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent event) {
+                Main.applicationClosing();
                 stopActiveEditing(content);
                 for (Window window : Window.getWindows()) {
                     if (window != PayrollSystemFrame.this && window.isDisplayable()) window.dispose();
@@ -123,7 +130,7 @@ public class PayrollSystemFrame extends JFrame {
     private void toggleSidebar(){sidebarCollapsed=!sidebarCollapsed;updateSidebarLayout();}
     private void updateSidebarLayout(){int targetWidth=sidebarCollapsed?60:220;Dimension slotSize=new Dimension(targetWidth,45);sidebarToggle.setText(sidebarCollapsed?"\u2630":"\u2630  MENU");sidebarToggle.setPreferredSize(slotSize);sidebarToggle.setMinimumSize(slotSize);sidebarToggle.setMaximumSize(slotSize);sidebarToggle.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);sidebarToggle.setToolTipText(sidebarCollapsed?"Expand sidebar":"Collapse sidebar");for(JButton button:menuButtons.values()){Dimension size=new Dimension(targetWidth,48);button.setPreferredSize(size);button.setMinimumSize(size);button.setMaximumSize(size);}updateSidebarIcons();int from=sidebar.getPreferredSize().width;new Timer(12,new java.awt.event.ActionListener(){int width=from;public void actionPerformed(java.awt.event.ActionEvent e){width+=Integer.compare(targetWidth,width)*Math.min(20,Math.abs(targetWidth-width));sidebar.setPreferredSize(new Dimension(width,0));sidebar.revalidate();sidebar.repaint();if(width==targetWidth)((Timer)e.getSource()).stop();}}).start();}
     private void updateSidebarIcons(){for(Map.Entry<String,JButton> entry:menuButtons.entrySet()){JButton button=entry.getValue();if(button.getClientProperty("menuText")==null)button.putClientProperty("menuText",button.getText());String text=String.valueOf(button.getClientProperty("menuText"));button.setText(sidebarCollapsed?sidebarIcon(entry.getKey()):text);button.setToolTipText(sidebarCollapsed?text:null);button.setHorizontalAlignment(sidebarCollapsed?SwingConstants.CENTER:SwingConstants.LEFT);}}
-    private String sidebarIcon(String name){return switch(name){case "Dashboard"->"\uD83D\uDCCA";case "Master Data"->"\uD83D\uDCC2";case "Employee"->"\uD83D\uDC65";case "Attendance"->"\uD83D\uDCC5";case "Cost to Company (CTC)"->"\uD83D\uDCB0";case "Earnings & Allowances"->"\uD83D\uDCC8";case "Deductions"->"\uD83D\uDCC9";case "Salary"->"\uD83D\uDCBB";case "Payslip"->"\uD83D\uDCC4";case "Reports"->"\uD83D\uDCCA";case "Settings"->"\u2699";case "Backup & Restore"->"\uD83D\uDCBE";case "Help"->"?\u20DD";case "Logout"->"\u279C";default->"";};}
+    private String sidebarIcon(String name){return switch(name){case "Dashboard"->"\uD83D\uDCCA";case "Master Data"->"\uD83D\uDCC2";case "Employee"->"\uD83D\uDC65";case "Attendance"->"\uD83D\uDCC5";case "Cost to Company (CTC)"->"\uD83D\uDCB0";case "Earnings & Allowances"->"\uD83D\uDCC8";case "Deductions"->"\uD83D\uDCC9";case "Salary"->"\uD83D\uDCBB";case "Payslip"->"\uD83D\uDCC4";case "Reports"->"\uD83D\uDCCA";case "Settings"->"\u2699";case "Backup & Restore"->"\uD83D\uDCBE";case "Help"->"\u2753";case "Logout"->"\u279C";default->"";};}
 
     private void logout(){String username=Session.currentUser;AuditLogDAO.logActivity(username,"USER_LOGOUT","User logged out of system",new java.sql.Timestamp(System.currentTimeMillis()));Session.logout();dispose();SwingUtilities.invokeLater(()->new LoginFrame().setVisible(true));}
 

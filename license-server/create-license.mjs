@@ -13,7 +13,7 @@ if (!adminSecret && fs.existsSync(envFile)) {
   if (match) adminSecret = match[1].trim();
 }
 
-const workerUrl = process.env.LICENSE_SERVER_URL || "https://payroll-license-api.adityapdixit.workers.dev";
+const workerUrl = process.env.LICENSE_SERVER_URL || "https://payroll-license-api.yasl-server.workers.dev";
 
 function generateKey() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // readable chars excluding easily confused ones

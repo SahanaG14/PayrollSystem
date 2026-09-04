@@ -1,6 +1,8 @@
-import java.sql.*;
-public class AuditLogDAO {
-    public AuditLogDAO(){try(Connection c=DBConnection.getConnection();Statement s=c==null?null:c.createStatement()){if(s!=null)s.executeUpdate("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT, action_name TEXT, employee_id TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");}catch(SQLException ignored){}}
-    public void log(String action,String employeeId){try(Connection c=DBConnection.getConnection()){if(c==null)return;try(PreparedStatement p=c.prepareStatement("INSERT INTO audit_log(user_name,action_name,employee_id) VALUES(?,?,?)")){p.setString(1,Session.currentUser);p.setString(2,action);p.setString(3,employeeId);p.executeUpdate();}}catch(SQLException ignored){}}
-    public static void logActivity(String username,String action,String details,Timestamp timestamp){try(Connection c=DBConnection.getConnection()){if(c==null)return;try(PreparedStatement p=c.prepareStatement("INSERT INTO audit_log(user_name,action_name,employee_id,created_at) VALUES(?,?,?,?)")){p.setString(1,username);p.setString(2,action);p.setString(3,details);p.setTimestamp(4,timestamp);p.executeUpdate();}}catch(SQLException ignored){}}
+import java.sql.Timestamp;
+
+/** Compatibility facade: all audit events now use the one central ActivityLogger. */
+public final class AuditLogDAO {
+    public AuditLogDAO(){}
+    public void log(String action,String employeeId){ActivityLogger.logRecord("Application",action,"Completed",employeeId,"SUCCESS");}
+    public static void logActivity(String username,String action,String details,Timestamp timestamp){ActivityLogger.logAs(username,"Application",action,details,action.contains("FAILED")?"FAILED":"SUCCESS");}
 }

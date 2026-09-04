@@ -1,6 +1,6 @@
-# Payroll System Licensing Service
+# Yashasvi Accounting Solutions LLP Licensing Service
 
-This licensing service issues **lifetime** licenses for Payroll System. Each license is verified online against Cloudflare D1 and is bound to the customer's machine(s) up to the allowed seat limit.
+This licensing service issues **lifetime** licenses for Yashasvi Accounting Solutions LLP. Each license is verified online against Cloudflare D1 and is bound to the customer's machine(s) up to the allowed seat limit.
 
 - **Production API Endpoint**: `https://payroll-license-api.adityapdixit.workers.dev`
 
@@ -77,6 +77,24 @@ node license-server/revoke-license.mjs --activation <ACTIVATION_ID>
 ```bash
 node license-server/revoke-license.mjs --enable PAY-XXXX-XXXX-XXXX-XXXX
 ```
+## Credential recovery
+
+Set the server-only signing secret once (never add it to the desktop application):
+```bash
+npx wrangler secret put RECOVERY_SECRET
+```
+Apply the recovery-code migration to an already-deployed D1 database:
+```bash
+npx wrangler d1 execute payroll-licenses --remote --file=migrations/002_recovery_codes.sql
+```
+After verifying a customer's Installation ID, support can issue one short-lived, one-time code:
+```bash
+curl -X POST https://payroll-license-api.adityapdixit.workers.dev/v1/admin/recovery-codes \
+  -H "Authorization: Bearer YOUR_ADMIN_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"supportId":"YASL-A7K9-P2M4-Q7W8","expiresMinutes":15}'
+```
+The client submits that code in **Forgot Username or Password?**. The Worker consumes it once and authorizes a local credential reset without touching payroll data.
 
 ---
 
@@ -84,6 +102,7 @@ node license-server/revoke-license.mjs --enable PAY-XXXX-XXXX-XXXX-XXXX
 
 - The server stores only cryptographic **SHA-256 hashes** of license keys.
 - **Never share or commit `ADMIN_SECRET`** into source control or include it in client desktop builds.
+- **Never share or commit `RECOVERY_SECRET`**; it signs server-issued recovery codes and remains only in Cloudflare Workers secrets.
 - The desktop app uses `LicenseService.java` to validate licenses at launch.
 
 
