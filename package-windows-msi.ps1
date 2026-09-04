@@ -10,7 +10,7 @@ $root=$PSScriptRoot;$target=Join-Path $root 'target';$classes=Join-Path $target 
 
 # A full JDK is required. Set JAVA_HOME to it if jpackage/jlink are not on PATH.
 function Find-JdkTool([string]$name) { if($env:JAVA_HOME){$candidate=Join-Path $env:JAVA_HOME "bin\$name.exe";if(Test-Path $candidate){return $candidate}}$command=Get-Command $name -ErrorAction SilentlyContinue;if($command){return $command.Source}throw "A full JDK 17+ with $name is required. Set JAVA_HOME to that JDK." }
-$javac=Find-JdkTool 'javac';$jar=Find-JdkTool 'jar';$jlink=Find-JdkTool 'jlink';$jpackage=Find-JdkTool 'jpackage'
+$javac=Find-JdkTool 'javac';$java=Find-JdkTool 'java';$jar=Find-JdkTool 'jar';$jlink=Find-JdkTool 'jlink';$jpackage=Find-JdkTool 'jpackage'
 $bundledWix=Join-Path $root 'tools\wix311';if(Test-Path (Join-Path $bundledWix 'candle.exe')){$env:Path="$bundledWix;$env:Path"}
 if(!(Test-Path (Join-Path $root 'lib\sqlite-jdbc-3.46.1.0.jar'))){throw 'Required runtime libraries are missing from lib.'}
 
@@ -18,6 +18,8 @@ Remove-Item -Recurse -Force $classes,$input,$runtime,$output -ErrorAction Silent
 New-Item -ItemType Directory -Force $classes,$input,$output,(Join-Path $input 'lib') | Out-Null
 $sources=Get-ChildItem (Join-Path $root 'src') -Filter '*.java' | ForEach-Object FullName
 & $javac -d $classes $sources;if($LASTEXITCODE -ne 0){throw 'Compilation failed.'}
+# Include a blank, fully initialized database. Client data is never packaged.
+$seed=Join-Path $classes 'empty-payroll.db';& $java "-Dpayroll.db.path=$seed" -cp "$classes;$root\lib\*" SchemaSeedBuilder;if($LASTEXITCODE -ne 0){throw 'Schema seed creation failed.'}
 Copy-Item (Join-Path $root 'assets\yasl-logo.png') (Join-Path $classes 'yasl-logo.png')
 Copy-Item (Join-Path $root 'assets\yasl-app-icon.png') (Join-Path $classes 'yasl-app-icon.png')
 # Ship the normal entry point: it shows activation before database initialization and login.
